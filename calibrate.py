@@ -23,6 +23,7 @@ objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
 images = glob.glob('out/*.jpg')
 print(images)
+print("Foo")
 for fname in images:
     img = cv.imread(fname)
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -42,14 +43,19 @@ for fname in images:
         cv.imshow('img', img)
         cv.waitKey(1)
 
+cv.destroyAllWindows()
+cv.waitKey(1)
+print("done with pictures")
 ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
+print("got matrix")
 img = cv.imread(images[1])
 h,  w = img.shape[:2]
 newcameramtx, roi = cv.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
+print("optimal matrix")
 #cv.destroyAllWindows()
 dst = cv.undistort(img, mtx, dist, None, newcameramtx)
-cv.imwrite(name()+".png", dst)
-
+cv.imwrite(name()+".jpg", dst)
+print("applied  matrix to first picture")
 mean_error = 0
 for i in range(len(objpoints)):
     imgpoints2, _ = cv.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
@@ -57,4 +63,5 @@ for i in range(len(objpoints)):
     mean_error += error
 print( "total error: {}".format(mean_error/len(objpoints)) )
 
-np.savetxt(name()+".txt", newcameramtx)
+np.savez_compressed(name(), mtx=mtx, dist=dist, mtx2=newcameramtx)
+#np.savetxt(name()+".txt", mtx=mtx, dist=dist)
