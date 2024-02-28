@@ -15,7 +15,10 @@ logger.info("logger started")
 def init(name):
     global logger
     new = logger.getLogger(name)
-    logger.info(f'loaded module "{name}"')
+    if name == "__main__":
+        logger.info("main module initialized")
+    else:
+        logger.info(f'loaded module "{name}"')
     return new
 
 def auto(name):
