@@ -7,7 +7,7 @@ import log
 import atexit
 
 log, dbg, _ = log.auto(__name__)
-log("calibration start")
+
 x = 8
 y = 5
 
@@ -48,7 +48,6 @@ def process(img):
 def finish():
     #log("done with pictures")
     num = len(objpoints)
-    log("Shape:"+str(shape))
     if num==0:
         log("no calib data, returning")
         return
