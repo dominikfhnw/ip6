@@ -2,7 +2,7 @@
 import numpy as np
 import cv2 as cv
 import glob
-from datetime import datetime
+from timestring import timestring
 import log
 import atexit
 
@@ -16,7 +16,7 @@ size = (x,y)
 shape = None
 
 def name():
-    return "calibration/calib-"+datetime.now().strftime("%Y%m%d-%H%M%S")
+    return "calibration/calib-"+timestring()
 
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
