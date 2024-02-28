@@ -2,6 +2,7 @@
 import timey
 import log
 import detect
+import correct
 import cv2 as cv
 import socket
 import sys
@@ -64,7 +65,8 @@ while True:
         copy = frame
 
     cv.imshow('frame',  copy)
-    out = detect.detect(frame.copy())
+    out = correct.process(frame.copy())
+    out = detect.process(out)
 
     cv.imshow('out', out)
 
