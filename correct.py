@@ -5,16 +5,22 @@ import glob
 import os
 
 log, dbg, _ = log.auto(__name__)
+mtx = None
 
-files = glob.glob("calib-*.npz")
+files = glob.glob("calibration/calib-*.npz")
 files.sort(key=os.path.getmtime)
-calib = files[-1]
-log("calib file "+calib)
-#matrix = np.loadtxt(calib)
-#dbg(matrix)
-data = np.load(calib)
-mtx = data["mtx"]
-dist = data["dist"]
+if len(files) > 0:
+    calib = files[-1]
+    log("calib file "+calib)
+    #matrix = np.loadtxt(calib)
+    #dbg(matrix)
+    data = np.load(calib)
+    mtx = data["mtx"]
+    dist = data["dist"]
+else:
+    log("no calibration file found")
 
 def process(img):
+    if mtx is None:
+        return img
     return cv.undistort(img, mtx, dist, None, None)
