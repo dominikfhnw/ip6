@@ -17,6 +17,10 @@ if len(files) > 0:
     data = np.load(calib)
     mtx = data["mtx"]
     dist = data["dist"]
+    shape = data["shape"]
+    final_error = data["final_error"]
+    log("shape: "+str(shape)+", final_error: "+str(final_error))
+
 else:
     log("no calibration file found")
 
