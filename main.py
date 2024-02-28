@@ -7,11 +7,10 @@ import calib
 import cv2 as cv
 import socket
 import sys
-from datetime import datetime
+from timestring import timestring
 
 Camera = 0 # which camera to use
 Mirror = False # flip image (for webcam)
-Calib = False # calibrate with 5x8 chessboard
 captureAPI = cv.CAP_ANY
 if sys.platform == "win32":
     # default API is really slow to start on windows
@@ -67,13 +66,8 @@ while True:
         copy = frame
 
     cv.imshow('frame',  copy)
-
-    if Calib:
-        out = calib.process(frame.copy())
-    else:
-        out = correct.process(frame.copy())
-        out = detect.process(out)
-
+    out = correct.process(frame.copy())
+    out = detect.process(out)
     cv.imshow('out', out)
 
     match chr(cv.pollKey() & 0xFF):
@@ -85,18 +79,22 @@ while True:
             res(640,480)
         case '3':
             res(10,10)
-        case 'c':
-            Calib = not Calib
         case 'm':
             Mirror = not Mirror
-        case 's' | ' ':
-            date = datetime.now().strftime("%Y%m%d-%H%M%S")
+        case 's':
+            date = timestring()
             filename = "out/img"+date+".jpg"
+            filename2 = "out/img"+date+"-out.jpg"
             if cv.imwrite(filename, frame):
                 log("Written "+filename)
             else:
                 logger.fatal("Error writing file "+filename)
                 break
+            cv.imwrite(filename2, out)
+        case ' ':
+            out = calib.process(frame.copy())
+            cv.imshow('out', out)
+            cv.waitKey(500)
 
     if closed("frame") or closed("out"):
         break
