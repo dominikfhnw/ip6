@@ -11,3 +11,13 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger.info("logger started")
+
+def init(name):
+    global logger
+    new = logger.getLogger(name)
+    logger.info(f'loaded module "{name}"')
+    return new
+
+def auto(name):
+    logger = init(name)
+    return (logger.info, logger.debug, logger)

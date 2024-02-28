@@ -1,36 +1,26 @@
 #!/usr/bin/env python3
 import timey
-from log import logger
-print(timey.fromstart())
-import cv2 as cv
-print(timey.fromstart())
+import log
 import detect
-import os
+import cv2 as cv
 import socket
 import sys
-
-log = logger.info
-dbg = logger.debug
+from datetime import datetime
 
 Camera = 0 # which camera to use
 Mirror = False # flip image (for webcam)
-if os.name == "nt":
+captureAPI = cv.CAP_ANY
+if sys.platform == "win32":
     # default API is really slow to start on windows
-    # and does not support changing resolution
+    # and does not support changing resolution on my machine
     captureAPI = cv.CAP_DSHOW
-else:
-    captureAPI = cv.CAP_ANY
 
-
-
+log, dbg, logger = log.auto(__name__)
 log("Seven segment display detector")
-#print("Python "+platform.python_version())
 log("Python "+sys.version)
-log("OpenCV "+cv.__version__)
+log("OpenCV-Python "+cv.__version__)
 #print("Platform "+platform.platform())
-log("Host "+socket.gethostname()+" on "+os.name)
-# platform is too slow
-#print("Host "+platform.node()+" on "+platform.system())
+log("Host "+socket.gethostname()+" on "+sys.platform)
 dbg("sysinfo done")
 
 def closed(str):
@@ -42,36 +32,7 @@ def res(x,y):
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, y)
     log("res changed")
 
-def list_ports():
-    """
-    Test the ports and returns a tuple with the available ports and the ones that are working.
-    """
-    non_working_ports = []
-    dev_port = 0
-    working_ports = []
-    available_ports = []
-    while len(non_working_ports) < 6: # if there are more than 5 nonworking ports stop the testing.
-        camera = cv.VideoCapture(dev_port)
-        if not camera.isOpened():
-            non_working_ports.append(dev_port)
-            print("Port %s is not working." %dev_port)
-        else:
-            is_reading, img = camera.read()
-            w = camera.get(3)
-            h = camera.get(4)
-            if is_reading:
-                print("Port %s is working and reads images (%s x %s)" %(dev_port,h,w))
-                working_ports.append(dev_port)
-            else:
-                print("Port %s for camera ( %s x %s) is present but does not reads." %(dev_port,h,w))
-                available_ports.append(dev_port)
-        dev_port +=1
-    return available_ports,working_ports,non_working_ports
-
-
 log("start camera")
-#list_ports()
-#exit()
 cap = cv.VideoCapture(Camera, captureAPI)
 dbg("camera check")
 if not cap.isOpened():
@@ -83,7 +44,6 @@ width = cap.get(cv.CAP_PROP_FRAME_WIDTH)
 height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
 log(f"Camera {Camera}: {width}x{height}, {fps}fps")
 log(f"Backend: {cap.getBackendName()}")
-
 dbg("camera initialized")
 
 log("init time: "+timey.fromstr())
@@ -98,14 +58,15 @@ while True:
         logger.fatal("Can't receive frame (stream end?). Exiting ...")
         break
 
+    if Mirror:
+        copy = cv.flip(frame, 1)
+    else:
+        copy = frame
+
+    cv.imshow('frame',  copy)
     out = detect.detect(frame.copy())
 
-    if Mirror:
-        frame = cv.flip(frame, 1)
-
-    cv.imshow('frame', frame)
-    #cv.imshow('out', out)
-
+    cv.imshow('out', out)
 
     match chr(cv.pollKey() & 0xFF):
         case 'q':
@@ -116,11 +77,21 @@ while True:
             res(640,480)
         case '3':
             res(10,10)
+        case 'm':
+            Mirror = not Mirror
+        case 's' | ' ':
+            date = datetime.now().strftime("%Y%m%d-%H%M%S")
+            filename = "out/img"+date+".jpg"
+            if cv.imwrite(filename, frame):
+                log("Written "+filename)
+            else:
+                logger.fatal("Error writing file "+filename)
+                break
 
-    if closed("frame"):# or closed("out"):
+    if closed("frame") or closed("out"):
         break
     t2 = timey.time()
-    #log(1/(t2 - t1 + 0.0001))
+    #log(f'{1/(t2 - t1 + 0.0001):.0f}fps')
 
 cv.destroyAllWindows()
-log("total time:"+timey.fromstr())
+log("total time: "+timey.fromstr())
