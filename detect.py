@@ -9,7 +9,7 @@ arucoParams = cv.aruco.DetectorParameters()
 det = cv.aruco.ArucoDetector(dictionary=arucoDict, detectorParams=arucoParams)
 
 
-def detect(img):
+def process(img):
     #log("foo")
     corners, ids, rejectedImgPoints = det.detectMarkers(img)
     #print("CORNERS:",corners,", IDS:",ids)
