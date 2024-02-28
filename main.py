@@ -3,6 +3,7 @@ import timey
 import log
 import detect
 import correct
+import calib
 import cv2 as cv
 import socket
 import sys
@@ -10,6 +11,7 @@ from datetime import datetime
 
 Camera = 0 # which camera to use
 Mirror = False # flip image (for webcam)
+Calib = False # calibrate with 5x8 chessboard
 captureAPI = cv.CAP_ANY
 if sys.platform == "win32":
     # default API is really slow to start on windows
@@ -65,8 +67,12 @@ while True:
         copy = frame
 
     cv.imshow('frame',  copy)
-    out = correct.process(frame.copy())
-    out = detect.process(out)
+
+    if Calib:
+        out = calib.process(frame.copy())
+    else:
+        out = correct.process(frame.copy())
+        out = detect.process(out)
 
     cv.imshow('out', out)
 
@@ -79,6 +85,8 @@ while True:
             res(640,480)
         case '3':
             res(10,10)
+        case 'c':
+            Calib = not Calib
         case 'm':
             Mirror = not Mirror
         case 's' | ' ':
