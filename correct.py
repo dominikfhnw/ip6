@@ -19,6 +19,8 @@ if len(files) > 0:
     dist = data["dist"]
     shape = data["shape"]
     final_error = data["final_error"]
+    log(dist)
+    log(mtx)
     log("shape: "+str(shape)+", final_error: "+str(final_error))
 
 else:
