@@ -13,7 +13,6 @@ logging.basicConfig(
 logger.info("logger started")
 
 def init(name):
-    global logger
     new = logger.getLogger(name)
     if name == "__main__":
         logger.info("main module initialized")
