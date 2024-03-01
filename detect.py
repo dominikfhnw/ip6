@@ -2,31 +2,53 @@ import log
 import cv2 as cv
 import numpy as np
 from isave import isave
+from math import floor, ceil
 
 log, dbg, logger = log.auto(__name__)
 
-arucoDict = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
-param = cv.aruco.DetectorParameters()
-#arucoParams.minMarkerPerimeterRate = 0.01
+ROI_X = 300
+ROI_Y = 100
+AVG = 10
+DICT = cv.aruco.DICT_4X4_50
+
+arucoDict = cv.aruco.getPredefinedDictionary(DICT)
 p1 = cv.aruco.DetectorParameters()
+p1.minMarkerPerimeterRate = 0.01
 p2 = cv.aruco.DetectorParameters()
+p2.minMarkerPerimeterRate = 0.01
 p3 = cv.aruco.DetectorParameters()
+p3.minMarkerPerimeterRate = 0.01
+p4 = cv.aruco.DetectorParameters()
+p4.minMarkerPerimeterRate = 0.01
+
 p1.cornerRefinementMethod = cv.aruco.CORNER_REFINE_SUBPIX
 # REFINE_CONTOUR seems to "dance" around the least, especially at higher distances
+# on second though... SUBPIX seems quite stable when near, and now also in lowres...
 p2.cornerRefinementMethod = cv.aruco.CORNER_REFINE_CONTOUR
-p3.cornerRefinementMethod = cv.aruco.CORNER_REFINE_NONE
+# APRILTAG is quite slow
+p3.cornerRefinementMethod = cv.aruco.CORNER_REFINE_APRILTAG
+p4.cornerRefinementMethod = cv.aruco.CORNER_REFINE_NONE
 
-det1 = cv.aruco.ArucoDetector(dictionary=arucoDict, detectorParams=p1)
+#det1 = cv.aruco.ArucoDetector(dictionary=arucoDict, detectorParams=p1)
 det2 = cv.aruco.ArucoDetector(dictionary=arucoDict, detectorParams=p1)
-det3 = cv.aruco.ArucoDetector(dictionary=arucoDict, detectorParams=p3)
+#det3 = cv.aruco.ArucoDetector(dictionary=arucoDict, detectorParams=p3)
 
 images = []
-composite = np.zeros(shape=(100,300), dtype=np.uint32)
-composite2 = np.zeros(shape=(100,300), dtype=np.uint32)
-composite3 = np.zeros(shape=(100,300), dtype=np.uint32)
+images_stab = []
+composite = np.zeros(shape=(ROI_Y, ROI_X), dtype=np.uint32)
+composite2 = np.zeros(shape=(ROI_Y, ROI_X), dtype=np.uint32)
+composite3 = np.zeros(shape=(ROI_Y, ROI_X), dtype=np.uint32)
 
 last = None
 #cv.imshow("composite", composite)
+
+def avg(image, count):
+    composite = np.zeros(shape=(ROI_Y,ROI_X), dtype=np.uint32)
+    last = image[-count:]
+    for i in last:
+        composite += i
+    return (composite/count).astype('uint8')
+
 
 def phaseCorrelate(img1, img2):
     #log("SHAPE:"+str(img2.shape))
@@ -73,8 +95,12 @@ def stabilize(img, reference):
 # cv.imwrite("i2w.png", i2w)
 # cv.waitKey(0)
 
+def otsu(img):
+    return cv.threshold(img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
+
 def foo(img, ids, corners, name="ROI", meta=None):
     global images
+    global images_stab
     global composite
     global composite2
     global last
@@ -103,29 +129,43 @@ def foo(img, ids, corners, name="ROI", meta=None):
         xc = r[0][0]
         xd = r[0][3]
 
+        minx, miny, maxx, maxy = float('inf'), float('inf'), 0, 0
+        for t in xa, xb, xc, xd:
+            if t[0] < minx:
+                minx = floor(t[0])
+            if t[1] < miny:
+                miny = floor(t[1])
+            if t[0] > maxx:
+                maxx = ceil(t[0])
+            if t[1] > maxy:
+                maxy = ceil(t[1])
+        roirect = img[miny:maxy, minx:maxx]
+        cv.imshow("roirect", roirect)
+        isave(roirect, "roi-rect")
+        log(f"minmax: {minx},{miny} {maxx},{maxy}")
+
         a = (int(xa[0]), int(xa[1]))
         b = (int(xb[0]), int(xb[1]))
         c = (int(xc[0]), int(xc[1]))
         d = (int(xd[0]), int(xd[1]))
 
         pts1 = np.float32([xa,xb,xc,xd])
-        pts2 = np.float32([[0,0], [0,100], [300,0], [300,100]])
+        offset = 10 # TODO: yanky
+        pts2 = np.float32([[-offset,0], [-offset,ROI_Y], [ROI_X+offset, 0], [ROI_X+offset, ROI_Y]])
         M = cv.getPerspectiveTransform(pts1,pts2)
-        dst = cv.warpPerspective(img,M,(300,100))
+        border=0
+        dst = cv.warpPerspective(img,M,(ROI_X, ROI_Y),flags=cv.INTER_LINEAR)
         dst = cv.cvtColor(dst, cv.COLOR_BGR2GRAY)
         images.append(dst)
         dst3 = dst.copy()
-        if last is not None:
-            tuple = phaseCorrelate(dst, last)
-            log("PHASE: "+str(tuple))
+        preavg = avg(images_stab, AVG)
 
-            y = tuple[0]
-            x = tuple[1]
-            M = np.array([
-                [1, 0, -y],
-                [0, 1, -x]
-            ]).astype('float32')
-            dst3 = warpAffine(dst, M)
+        #if last is not None:
+        if len(images_stab) > 0:
+            #dst3 = stabilize(dst3, composite)
+            dst3 = stabilize(dst3, preavg)
+        images_stab.append(dst3)
+
 
         #log("T1 "+str(dst.dtype))
         #log("T2 "+str(dst3.dtype))
@@ -135,30 +175,35 @@ def foo(img, ids, corners, name="ROI", meta=None):
         log("len "+str(cnt))
 
         #composite = cv.add(composite, dst, composite, None, np.dtype(np.uint16).num)
-        composite += dst
-        composite2 += dst3
+        #composite += dst
+        #composite2 += dst3
         #log(composite)
-        c2 = composite.copy()
-        c2 = (c2/cnt).astype('uint8')
+        #c2 = composite.copy()
+        #c2 = (c2/cnt).astype('uint8')
+        c2 = avg(images, AVG)
         cv.imshow("composite", c2)
+        ret, c3 = otsu(c2)
+        isave(c3,"composite-otsu")
+        isave(c2, "composite")
+        cv.imshow("composite otsu", c3)
 
-        cx2 = composite2.copy()
-        cx2 = (cx2/cnt).astype('uint8')
-        cv.imshow("composite3", cx2)
+        #cx2 = composite2.copy()
+        #cx2 = (cx2/cnt).astype('uint8')
+        cx2 = avg(images_stab, AVG)
+        cv.imshow("composite stab", cx2)
+        ret, cx3 = otsu(cx2)
+        cv.imshow("composite stab otsu", cx3)
 
-
-        ret, c3 = cv.threshold(c2,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
-        cv.imshow("composite2", c3)
 
 #c2 = cv.equalizeHist(c)
-        cv.imshow("composite", c2)
+        #cv.imshow("composite", c2)
         isave(dst, "roi-gray")
         #dst = cv.equalizeHist(dst)
-        ret, dst2 = cv.threshold(dst,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
+        ret, dst2 = otsu(dst)
         cv.imshow("roi-thresh", dst2)
 
-        if dst3 is not None:
-            cv.imshow("affine", dst3)
+        #if dst3 is not None:
+            #cv.imshow("affine", dst3)
         cv.imshow(name, dst)
 
         isave(img, "detect-raw")
@@ -176,9 +221,11 @@ def process(img, meta=None):
     if meta["key"] == "r":
         log("RESET")
         global images
+        global images_stab
         global composite
         global composite2
         images = []
+        images_stab = []
         composite = np.zeros(shape=(100,300), dtype=np.uint32)
         composite2 = np.zeros(shape=(100,300), dtype=np.uint32)
 
@@ -198,7 +245,7 @@ def process(img, meta=None):
     #log(ids)
     #log(corners)
     #print("CORNERS:",corners,", IDS:",ids)
-    frame = cv.aruco.drawDetectedMarkers(img, corners2, ids2)
+    #frame = cv.aruco.drawDetectedMarkers(img, corners2, ids2)
     #frame = cv.aruco.drawDetectedMarkers(img, rejectedImgPoints)
 
 
