@@ -35,10 +35,6 @@ det2 = cv.aruco.ArucoDetector(dictionary=arucoDict, detectorParams=p1)
 
 images = []
 images_stab = []
-composite = np.zeros(shape=(ROI_Y, ROI_X), dtype=np.uint32)
-composite2 = np.zeros(shape=(ROI_Y, ROI_X), dtype=np.uint32)
-composite3 = np.zeros(shape=(ROI_Y, ROI_X), dtype=np.uint32)
-
 last = None
 
 def avg(image, count):
@@ -78,17 +74,12 @@ def otsu(img):
 def foo(img, ids, corners, meta=None):
     global images
     global images_stab
-    global composite
-    global composite2
     global last
 
     if meta["key"] == "r":
         log("RESET")
         images = []
         images_stab = []
-        composite = np.zeros(shape=(100,300), dtype=np.uint32)
-        composite2 = np.zeros(shape=(100,300), dtype=np.uint32)
-
 
     left, right = None, None
     for num, value in enumerate(ids):
@@ -99,84 +90,86 @@ def foo(img, ids, corners, meta=None):
             right = num
             log("found right:"+str(num))
 
-    if left is not None and right is not None:
-        log("found both")
-        l = corners[left]
-        r = corners[right]
+    if left is None or right is None:
+        return img
 
-        log("right: "+str(corners[right]))
-        xa = l[0][1]
-        xb = l[0][2]
-        xc = r[0][0]
-        xd = r[0][3]
+    log("found both")
+    l = corners[left]
+    r = corners[right]
 
-        minx, miny, maxx, maxy = float('inf'), float('inf'), 0, 0
-        for t in xa, xb, xc, xd:
-            if t[0] < minx:
-                minx = floor(t[0])
-            if t[1] < miny:
-                miny = floor(t[1])
-            if t[0] > maxx:
-                maxx = ceil(t[0])
-            if t[1] > maxy:
-                maxy = ceil(t[1])
-        roirect = img[miny:maxy, minx:maxx]
-        cv.imshow("roirect", roirect)
-        isave(roirect, "roi-rect")
-        log(f"minmax: {minx},{miny} {maxx},{maxy}")
+    log("right: "+str(corners[right]))
+    xa = l[0][1]
+    xb = l[0][2]
+    xc = r[0][0]
+    xd = r[0][3]
 
-        a = (int(xa[0]), int(xa[1]))
-        b = (int(xb[0]), int(xb[1]))
-        c = (int(xc[0]), int(xc[1]))
-        d = (int(xd[0]), int(xd[1]))
+    minx, miny, maxx, maxy = float('inf'), float('inf'), 0, 0
+    for t in xa, xb, xc, xd:
+        if t[0] < minx:
+            minx = floor(t[0])
+        if t[1] < miny:
+            miny = floor(t[1])
+        if t[0] > maxx:
+            maxx = ceil(t[0])
+        if t[1] > maxy:
+            maxy = ceil(t[1])
+    roirect = img[miny:maxy, minx:maxx]
+    cv.imshow("roirect", roirect)
+    isave(roirect, "roi-rect")
+    log(f"minmax: {minx},{miny} {maxx},{maxy}")
 
-        pts1 = np.float32([xa,xb,xc,xd])
-        offset = 10 # TODO: yanky
-        pts2 = np.float32([[-offset,0], [-offset,ROI_Y], [ROI_X+offset, 0], [ROI_X+offset, ROI_Y]])
-        M = cv.getPerspectiveTransform(pts1,pts2)
-        dst = cv.warpPerspective(img,M,(ROI_X, ROI_Y),flags=cv.INTER_LINEAR)
-        dst = cv.cvtColor(dst, cv.COLOR_BGR2GRAY)
-        images.append(dst)
-        dst3 = dst.copy()
-        preavg = avg(images_stab, AVG)
+    a = (int(xa[0]), int(xa[1]))
+    b = (int(xb[0]), int(xb[1]))
+    c = (int(xc[0]), int(xc[1]))
+    d = (int(xd[0]), int(xd[1]))
 
-        if len(images_stab) > 0:
-            #dst3 = stabilize(dst3, composite)
-            dst3 = stabilize(dst3, preavg)
-        images_stab.append(dst3)
+    pts1 = np.float32([xa,xb,xc,xd])
+    offset = 10 # TODO: yanky
+    pts2 = np.float32([[-offset,0], [-offset,ROI_Y], [ROI_X+offset, 0], [ROI_X+offset, ROI_Y]])
+    M = cv.getPerspectiveTransform(pts1,pts2)
+    dst = cv.warpPerspective(img,M,(ROI_X, ROI_Y),flags=cv.INTER_LINEAR)
+    dst = cv.cvtColor(dst, cv.COLOR_BGR2GRAY)
+    images.append(dst)
+    dst3 = dst.copy()
+    preavg = avg(images_stab, AVG)
 
-        cnt = len(images)
-        log("len "+str(cnt))
+    if len(images_stab) > 0:
+        #dst3 = stabilize(dst3, composite)
+        dst3 = stabilize(dst3, preavg)
+    images_stab.append(dst3)
 
-        c2 = avg(images, AVG)
-        cv.imshow("composite", c2)
-        ret, c3 = otsu(c2)
-        isave(c3,"composite-otsu")
-        isave(c2, "composite")
-        cv.imshow("composite otsu", c3)
+    cnt = len(images)
+    log("len "+str(cnt))
 
-        cx2 = avg(images_stab, AVG)
-        cv.imshow("composite stab", cx2)
-        ret, cx3 = otsu(cx2)
-        cv.imshow("composite stab otsu", cx3)
+    c2 = avg(images, AVG)
+    cv.imshow("composite", c2)
+    ret, c3 = otsu(c2)
+    isave(c3,"composite-otsu")
+    isave(c2, "composite")
+    cv.imshow("composite otsu", c3)
 
-        isave(dst, "roi-gray")
-        #dst = cv.equalizeHist(dst)
-        ret, dst2 = otsu(dst)
-        cv.imshow("roi-thresh", dst2)
-        isave(dst2, "roi-thresh")
+    cx2 = avg(images_stab, AVG)
+    cv.imshow("composite stab", cx2)
+    ret, cx3 = otsu(cx2)
+    cv.imshow("composite stab otsu", cx3)
+
+    isave(dst, "roi-gray")
+    #dst = cv.equalizeHist(dst)
+    ret, dst2 = otsu(dst)
+    cv.imshow("roi-thresh", dst2)
+    isave(dst2, "roi-thresh")
 
 
-        cv.imshow("ROI", dst)
+    cv.imshow("ROI", dst)
 
-        isave(img, "detect-raw")
+    isave(img, "detect-raw")
+    if meta["drawROI"]:
         cv.line(img, a, b, (0,0,255), 5)
         cv.line(img, a, c, (0,0,255), 5)
         cv.line(img, b, d, (0,0,255), 5)
         cv.line(img, c, d, (0,0,255), 5)
-
         isave(img, "detect-marked")
-        last = dst
+    last = dst
 
 
 def process(img, meta):
