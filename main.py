@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import timey
 import log
-import detect
+import aruco
 import correct
 import calib
 import cv2 as cv
@@ -120,7 +120,7 @@ while True:
     out = frame.copy()
     if Correct:
         out = correct.process(out)
-    out = detect.process(out, meta)
+    out = aruco.process(out, meta)
     cv.imshow('out', out)
 
     if closed("frame") or closed("out"):

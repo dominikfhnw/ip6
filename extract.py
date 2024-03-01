@@ -9,29 +9,6 @@ log, dbg, logger = log.auto(__name__)
 ROI_X = 300
 ROI_Y = 100
 AVG = 10
-DICT = cv.aruco.DICT_4X4_50
-
-arucoDict = cv.aruco.getPredefinedDictionary(DICT)
-p1 = cv.aruco.DetectorParameters()
-p1.minMarkerPerimeterRate = 0.01
-p2 = cv.aruco.DetectorParameters()
-p2.minMarkerPerimeterRate = 0.01
-p3 = cv.aruco.DetectorParameters()
-p3.minMarkerPerimeterRate = 0.01
-p4 = cv.aruco.DetectorParameters()
-p4.minMarkerPerimeterRate = 0.01
-
-p1.cornerRefinementMethod = cv.aruco.CORNER_REFINE_SUBPIX
-# REFINE_CONTOUR seems to "dance" around the least, especially at higher distances
-# on second though... SUBPIX seems quite stable when near, and now also in lowres...
-p2.cornerRefinementMethod = cv.aruco.CORNER_REFINE_CONTOUR
-# APRILTAG is quite slow
-p3.cornerRefinementMethod = cv.aruco.CORNER_REFINE_APRILTAG
-p4.cornerRefinementMethod = cv.aruco.CORNER_REFINE_NONE
-
-#det1 = cv.aruco.ArucoDetector(dictionary=arucoDict, detectorParams=p1)
-det2 = cv.aruco.ArucoDetector(dictionary=arucoDict, detectorParams=p1)
-#det3 = cv.aruco.ArucoDetector(dictionary=arucoDict, detectorParams=p3)
 
 images = []
 images_stab = []
@@ -71,7 +48,7 @@ def stabilize(img, reference):
 def otsu(img):
     return cv.threshold(img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
 
-def foo(img, ids, corners, meta=None):
+def process(img, ids, corners, meta=None):
     global images
     global images_stab
     global last
@@ -170,17 +147,4 @@ def foo(img, ids, corners, meta=None):
         cv.line(img, c, d, (0,0,255), 5)
         isave(img, "detect-marked")
     last = dst
-
-
-def process(img, meta):
-
-    corners, ids, rejectedImgPoints = det2.detectMarkers(img)
-    if ids is not None:
-        foo(img, ids, corners, meta)
-
-    if meta["drawAruco"]:
-        img = cv.aruco.drawDetectedMarkers(img, corners, ids)
-    if meta["drawRejects"]:
-        img = cv.aruco.drawDetectedMarkers(img, rejectedImgPoints)
-
     return img
