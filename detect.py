@@ -40,7 +40,6 @@ composite2 = np.zeros(shape=(ROI_Y, ROI_X), dtype=np.uint32)
 composite3 = np.zeros(shape=(ROI_Y, ROI_X), dtype=np.uint32)
 
 last = None
-#cv.imshow("composite", composite)
 
 def avg(image, count):
     composite = np.zeros(shape=(ROI_Y,ROI_X), dtype=np.uint32)
@@ -74,31 +73,10 @@ def stabilize(img, reference):
     M = translationMatrix(r)
     return warpAffine(img, M)
 
-# i1 = cv.imread("b1.png")
-# i2 = cv.imread("b2.png")
-# log("SHAPE "+str(i2.ndim))
-# r = phaseCorrelate(i2,i1)
-# log("SHAPE "+str(i2.ndim))
-#
-# M = translationMatrix(r)
-# log("CORR "+str(r))
-# M2 = np.array([
-#     [1, 0, r[0]],
-#     [0, 1, r[1]]
-# ]).astype('float32')
-# #i2w = warpAffine(i2, M)
-# i2w = stabilize(i2, i1)
-#
-# cv.imshow("i1", i1)
-# cv.imshow("i2", i2)
-# cv.imshow("i2w", i2w)
-# cv.imwrite("i2w.png", i2w)
-# cv.waitKey(0)
-
 def otsu(img):
     return cv.threshold(img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
 
-def foo(img, ids, corners, name="ROI", meta=None):
+def foo(img, ids, corners, meta=None):
     global images
     global images_stab
     global composite
@@ -110,20 +88,17 @@ def foo(img, ids, corners, name="ROI", meta=None):
     for num, value in enumerate(ids):
         if value == 4:
             left = num
-            log(name+" found left:"+str(num))
+            log("found left:"+str(num))
         if value == 7:
             right = num
-            log(name+" found right:"+str(num))
+            log("found right:"+str(num))
 
     if left is not None and right is not None:
-        log(name+" found both")
-        #log("left: "+str(left))
-        #log("right: "+str(right))
-        #log(name+" left: "+str(corners[left]))
+        log("found both")
         l = corners[left]
         r = corners[right]
 
-        log(name+" right: "+str(corners[right]))
+        log("right: "+str(corners[right]))
         xa = l[0][1]
         xb = l[0][2]
         xc = r[0][0]
@@ -153,33 +128,20 @@ def foo(img, ids, corners, name="ROI", meta=None):
         offset = 10 # TODO: yanky
         pts2 = np.float32([[-offset,0], [-offset,ROI_Y], [ROI_X+offset, 0], [ROI_X+offset, ROI_Y]])
         M = cv.getPerspectiveTransform(pts1,pts2)
-        border=0
         dst = cv.warpPerspective(img,M,(ROI_X, ROI_Y),flags=cv.INTER_LINEAR)
         dst = cv.cvtColor(dst, cv.COLOR_BGR2GRAY)
         images.append(dst)
         dst3 = dst.copy()
         preavg = avg(images_stab, AVG)
 
-        #if last is not None:
         if len(images_stab) > 0:
             #dst3 = stabilize(dst3, composite)
             dst3 = stabilize(dst3, preavg)
         images_stab.append(dst3)
 
-
-        #log("T1 "+str(dst.dtype))
-        #log("T2 "+str(dst3.dtype))
-        #og(composite.shape)
-        #log(composite.dtype)
         cnt = len(images)
         log("len "+str(cnt))
 
-        #composite = cv.add(composite, dst, composite, None, np.dtype(np.uint16).num)
-        #composite += dst
-        #composite2 += dst3
-        #log(composite)
-        #c2 = composite.copy()
-        #c2 = (c2/cnt).astype('uint8')
         c2 = avg(images, AVG)
         cv.imshow("composite", c2)
         ret, c3 = otsu(c2)
@@ -187,24 +149,21 @@ def foo(img, ids, corners, name="ROI", meta=None):
         isave(c2, "composite")
         cv.imshow("composite otsu", c3)
 
-        #cx2 = composite2.copy()
-        #cx2 = (cx2/cnt).astype('uint8')
         cx2 = avg(images_stab, AVG)
         cv.imshow("composite stab", cx2)
         ret, cx3 = otsu(cx2)
         cv.imshow("composite stab otsu", cx3)
 
-
-#c2 = cv.equalizeHist(c)
-        #cv.imshow("composite", c2)
         isave(dst, "roi-gray")
         #dst = cv.equalizeHist(dst)
         ret, dst2 = otsu(dst)
         cv.imshow("roi-thresh", dst2)
+        isave(dst2, "roi-thresh")
 
-        #if dst3 is not None:
+
+#if dst3 is not None:
             #cv.imshow("affine", dst3)
-        cv.imshow(name, dst)
+        cv.imshow("ROI", dst)
 
         isave(img, "detect-raw")
         cv.line(img, a, b, (0,0,255), 5)
@@ -213,11 +172,10 @@ def foo(img, ids, corners, name="ROI", meta=None):
         cv.line(img, c, d, (0,0,255), 5)
 
         isave(img, "detect-marked")
-        isave(dst, "roi-thresh")
         last = dst
         #rect = [corners[left][2], corners[left][3], ]
 
-def process(img, meta=None):
+def process(img, meta):
     if meta["key"] == "r":
         log("RESET")
         global images
@@ -236,7 +194,7 @@ def process(img, meta=None):
 
     corners2, ids2, rejectedImgPoints2 = det2.detectMarkers(img)
     if ids2 is not None:
-        foo(img, ids2, corners2, "ROI2")
+        foo(img, ids2, corners2, meta)
 
     #corners3, ids3, rejectedImgPoints3 = det3.detectMarkers(img)
     #if ids3 is not None:
