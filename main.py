@@ -7,10 +7,13 @@ import calib
 import cv2 as cv
 import socket
 import sys
-from timestring import timestring
+import pprint
+from timestring import timestring, iso8601
+from isave import isave
 
 Camera = 0 # which camera to use
 Mirror = False # flip image (for webcam)
+Correct = True # apply camera calibration
 captureAPI = cv.CAP_ANY
 if sys.platform == "win32":
     # default API is really slow to start on windows
@@ -18,7 +21,9 @@ if sys.platform == "win32":
     captureAPI = cv.CAP_DSHOW
 
 log, dbg, logger = log.auto(__name__)
-log("Seven segment display detector")
+# why oh why does the python logger not have a "notice" prio?
+logger.warning("Seven segment display detector")
+
 log("Python "+sys.version)
 log("OpenCV-Python "+cv.__version__)
 #print("Platform "+platform.platform())
@@ -30,9 +35,12 @@ def closed(str):
 
 def res(x,y):
     log("change res")
-    cap.set(cv.CAP_PROP_FRAME_WIDTH, x)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, y)
-    log("res changed")
+    cap.set(cv.CAP_PROP_FRAME_WIDTH, x)
+    fps = cap.get(cv.CAP_PROP_FPS)
+    width = cap.get(cv.CAP_PROP_FRAME_WIDTH)
+    height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
+    log(f"Changed to {width}x{height}, {fps}fps")
 
 log("start camera")
 cap = cv.VideoCapture(Camera, captureAPI)
@@ -47,6 +55,21 @@ height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
 log(f"Camera {Camera}: {width}x{height}, {fps}fps")
 log(f"Backend: {cap.getBackendName()}")
 dbg("camera initialized")
+meta = dict(
+    python = sys.version,
+    opencv = cv.__version__,
+    host = socket.gethostname(),
+    platform = sys.platform,
+    start = iso8601(),
+    backend = cap.getBackendName(),
+    camera = Camera,
+    width = int(width),
+    height = int(height),
+    frame = 0,
+)
+pp = pprint.PrettyPrinter(sort_dicts=False).pformat
+#pp(meta)
+log(pp(meta))
 
 log("init time: "+timey.fromstr())
 log("beginning main loop")
@@ -60,15 +83,7 @@ while True:
         logger.fatal("Can't receive frame (stream end?). Exiting ...")
         break
 
-    if Mirror:
-        copy = cv.flip(frame, 1)
-    else:
-        copy = frame
-
-    cv.imshow('frame',  copy)
-    out = correct.process(frame.copy())
-    out = detect.process(out)
-    cv.imshow('out', out)
+    meta["key"] = None
 
     match chr(cv.pollKey() & 0xFF):
         case 'q':
@@ -81,25 +96,35 @@ while True:
             res(10,10)
         case 'm':
             Mirror = not Mirror
+        case 'c':
+            Correct = not Correct
+        case 'r':
+            meta["key"] = "r"
         case 's':
-            date = timestring()
-            filename = "out/img"+date+".jpg"
-            filename2 = "out/img"+date+"-out.jpg"
-            if cv.imwrite(filename, frame):
-                log("Written "+filename)
-            else:
-                logger.fatal("Error writing file "+filename)
-                break
-            cv.imwrite(filename2, out)
+            isave(frame, "frame")
+            isave(out, "out")
         case ' ':
             out = calib.process(frame.copy())
             cv.imshow('out', out)
             cv.waitKey(500)
 
+    if Mirror:
+        copy = cv.flip(frame, 1)
+    else:
+        copy = frame
+
+    cv.imshow('frame',  copy)
+    out = frame.copy()
+    if Correct:
+        out = correct.process(out)
+    out = detect.process(out, meta)
+    cv.imshow('out', out)
+
     if closed("frame") or closed("out"):
         break
     t2 = timey.time()
     #log(f'{1/(t2 - t1 + 0.0001):.0f}fps')
+    meta["frame"] += 1
 
 cv.destroyAllWindows()
 log("total time: "+timey.fromstr())
