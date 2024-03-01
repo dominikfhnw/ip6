@@ -66,6 +66,9 @@ meta = dict(
     width = int(width),
     height = int(height),
     frame = 0,
+    drawAruco = True,
+    drawRejects = False,
+    drawROI = True,
 )
 pp = pprint.PrettyPrinter(sort_dicts=False).pformat
 #pp(meta)
