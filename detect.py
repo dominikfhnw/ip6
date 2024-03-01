@@ -52,26 +52,26 @@ def stabilize(img, reference):
     M = translationMatrix(r)
     return warpAffine(img, M)
 
-i1 = cv.imread("b1.png")
-i2 = cv.imread("b2.png")
-log("SHAPE "+str(i2.ndim))
-r = phaseCorrelate(i2,i1)
-log("SHAPE "+str(i2.ndim))
-
-M = translationMatrix(r)
-log("CORR "+str(r))
-M2 = np.array([
-    [1, 0, r[0]],
-    [0, 1, r[1]]
-]).astype('float32')
-#i2w = warpAffine(i2, M)
-i2w = stabilize(i2, i1)
-
-cv.imshow("i1", i1)
-cv.imshow("i2", i2)
-cv.imshow("i2w", i2w)
-cv.imwrite("i2w.png", i2w)
-cv.waitKey(0)
+# i1 = cv.imread("b1.png")
+# i2 = cv.imread("b2.png")
+# log("SHAPE "+str(i2.ndim))
+# r = phaseCorrelate(i2,i1)
+# log("SHAPE "+str(i2.ndim))
+#
+# M = translationMatrix(r)
+# log("CORR "+str(r))
+# M2 = np.array([
+#     [1, 0, r[0]],
+#     [0, 1, r[1]]
+# ]).astype('float32')
+# #i2w = warpAffine(i2, M)
+# i2w = stabilize(i2, i1)
+#
+# cv.imshow("i1", i1)
+# cv.imshow("i2", i2)
+# cv.imshow("i2w", i2w)
+# cv.imwrite("i2w.png", i2w)
+# cv.waitKey(0)
 
 def foo(img, ids, corners, name="ROI", meta=None):
     global images
