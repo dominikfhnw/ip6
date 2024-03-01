@@ -48,7 +48,6 @@ def avg(image, count):
         composite += i
     return (composite/count).astype('uint8')
 
-
 def phaseCorrelate(img1, img2):
     #log("SHAPE:"+str(img2.shape))
     if img1.ndim == 3:
@@ -82,6 +81,13 @@ def foo(img, ids, corners, meta=None):
     global composite
     global composite2
     global last
+
+    if meta["key"] == "r":
+        log("RESET")
+        images = []
+        images_stab = []
+        composite = np.zeros(shape=(100,300), dtype=np.uint32)
+        composite2 = np.zeros(shape=(100,300), dtype=np.uint32)
 
 
     left, right = None, None
@@ -161,8 +167,6 @@ def foo(img, ids, corners, meta=None):
         isave(dst2, "roi-thresh")
 
 
-#if dst3 is not None:
-            #cv.imshow("affine", dst3)
         cv.imshow("ROI", dst)
 
         isave(img, "detect-raw")
@@ -173,38 +177,17 @@ def foo(img, ids, corners, meta=None):
 
         isave(img, "detect-marked")
         last = dst
-        #rect = [corners[left][2], corners[left][3], ]
+
 
 def process(img, meta):
-    if meta["key"] == "r":
-        log("RESET")
-        global images
-        global images_stab
-        global composite
-        global composite2
-        images = []
-        images_stab = []
-        composite = np.zeros(shape=(100,300), dtype=np.uint32)
-        composite2 = np.zeros(shape=(100,300), dtype=np.uint32)
 
-#log("foo")
-    #corners1, ids1, rejectedImgPoints1 = det1.detectMarkers(img)
-    #if ids1 is not None:
-    #    foo(img.copy(), ids1, corners1, "ROI1")
+    corners, ids, rejectedImgPoints = det2.detectMarkers(img)
+    if ids is not None:
+        foo(img, ids, corners, meta)
 
-    corners2, ids2, rejectedImgPoints2 = det2.detectMarkers(img)
-    if ids2 is not None:
-        foo(img, ids2, corners2, meta)
-
-    #corners3, ids3, rejectedImgPoints3 = det3.detectMarkers(img)
-    #if ids3 is not None:
-    #    foo(img.copy(), ids3, corners3, "ROI3")
-
-    #log(ids)
-    #log(corners)
-    #print("CORNERS:",corners,", IDS:",ids)
-    #frame = cv.aruco.drawDetectedMarkers(img, corners2, ids2)
-    #frame = cv.aruco.drawDetectedMarkers(img, rejectedImgPoints)
-
+    if meta["drawAruco"]:
+        img = cv.aruco.drawDetectedMarkers(img, corners, ids)
+    if meta["drawRejects"]:
+        img = cv.aruco.drawDetectedMarkers(img, rejectedImgPoints)
 
     return img
