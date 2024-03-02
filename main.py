@@ -14,6 +14,7 @@ from isave import isave
 Camera = 0 # which camera to use
 Mirror = False # flip image (for webcam)
 Correct = True # apply camera calibration
+Detect = True # detect and do stuff with aruco markers (the whole point here)
 captureAPI = cv.CAP_ANY
 if sys.platform == "win32":
     # default API is really slow to start on windows
@@ -37,10 +38,24 @@ def res(x,y):
     log("change res")
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, y)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, x)
+    cap.set(cv.CAP_PROP_FPS, 10000)
     fps = cap.get(cv.CAP_PROP_FPS)
     width = cap.get(cv.CAP_PROP_FRAME_WIDTH)
     height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
     log(f"Changed to {width}x{height}, {fps}fps")
+
+def showfps(img):
+    framecount = 30
+    ft = len(meta["ft"])
+    if ft > framecount:
+        ft = framecount
+    fps = int(ft / sum(meta["ft"][-ft:]))
+    cv.putText(img, f'{fps}fps',
+               (10,30),
+               fontFace=cv.FONT_HERSHEY_PLAIN,
+               fontScale=1,
+               color=(255, 255, 255)
+               )
 
 log("start camera")
 cap = cv.VideoCapture(Camera, captureAPI)
@@ -66,9 +81,11 @@ meta = dict(
     width = int(width),
     height = int(height),
     frame = 0,
+    ft = [0.033],
     drawAruco = True,
     drawRejects = False,
     drawROI = True,
+    histNormalize = True,
 )
 pp = pprint.PrettyPrinter(sort_dicts=False).pformat
 #pp(meta)
@@ -88,7 +105,7 @@ while True:
 
     meta["key"] = None
 
-    match chr(cv.pollKey() & 0xFF):
+    match chr(cv.pollKey() & 0xFF).lower():
         case 'q':
             break
         case '1':
@@ -97,6 +114,8 @@ while True:
             res(640,480)
         case '3':
             res(10,10)
+        case 'n':
+            meta["histNormalize"] = not meta["histNormalize"]
         case 'm':
             Mirror = not Mirror
         case 'c':
@@ -114,20 +133,23 @@ while True:
     if Mirror:
         copy = cv.flip(frame, 1)
     else:
-        copy = frame
-
+        copy = frame.copy()
+    showfps(copy)
     cv.imshow('frame',  copy)
     out = frame.copy()
     if Correct:
         out = correct.process(out)
-    out = aruco.process(out, meta)
+    if Detect:
+        out = aruco.process(out, meta)
     cv.imshow('out', out)
 
     if closed("frame") or closed("out"):
         break
-    t2 = timey.time()
-    #log(f'{1/(t2 - t1 + 0.0001):.0f}fps')
+
     meta["frame"] += 1
+    t2 = timey.time()
+    meta["ft"].append(t2 - t1 + 0.000001)
+    #log(f'{1/(t2 - t1 + 0.0001):.0f}fps')
 
 cv.destroyAllWindows()
 log("total time: "+timey.fromstr())
