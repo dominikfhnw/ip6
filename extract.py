@@ -3,6 +3,7 @@ import cv2 as cv
 import numpy as np
 from isave import isave
 from math import floor, ceil
+import segments
 
 log, dbg, logger = log.auto(__name__)
 
@@ -114,25 +115,30 @@ def process(img, ids, corners, meta=None):
         #dst3 = stabilize(dst3, composite)
         dst3 = stabilize(dst3, preavg)
     images_stab.append(dst3)
-
     cnt = len(images)
     log("len "+str(cnt))
 
     c2 = avg(images, AVG)
-    cv.imshow("composite", c2)
     ret, c3 = otsu(c2)
+    if meta["histNormalize"]:
+        c2 = cv.equalizeHist(c2)
+    cv.imshow("composite", c2)
     isave(c3,"composite-otsu")
     isave(c2, "composite")
     cv.imshow("composite otsu", c3)
 
     cx2 = avg(images_stab, AVG)
-    cv.imshow("composite stab", cx2)
     ret, cx3 = otsu(cx2)
+    if meta["histNormalize"]:
+        cx2 = cv.equalizeHist(cx2)
+    cv.imshow("composite stab", cx2)
     cv.imshow("composite stab otsu", cx3)
 
     isave(dst, "roi-gray")
-    #dst = cv.equalizeHist(dst)
     ret, dst2 = otsu(dst)
+    if meta["histNormalize"]:
+        dst = cv.equalizeHist(dst)
+
     cv.imshow("roi-thresh", dst2)
     isave(dst2, "roi-thresh")
 
@@ -147,4 +153,6 @@ def process(img, ids, corners, meta=None):
         cv.line(img, c, d, (0,0,255), 5)
         isave(img, "detect-marked")
     last = dst
+
+    segments.process(c2, meta)
     return img
