@@ -5,8 +5,8 @@ import log
 Enabled = False
 
 log, dbg, logger = log.auto(__name__)
-def isave(img, name="out"):
-    if not Enabled:
+def isave(img, name="out", force=False):
+    if not force and not Enabled:
         return
     filename = "out/"+name+timestring()+".jpg"
     if cv.imwrite(filename, img):
