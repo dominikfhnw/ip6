@@ -8,10 +8,15 @@ import meta
 
 log, dbg, logger = log.auto(__name__)
 
-ROI_X = 300
-ROI_Y = 100
+LENGTH_REL = 3
+HEIGHT = 300
 AVG = 10
+INTERPOLATION = cv.INTER_LINEAR
+OTSU_SCALE = 4
 
+
+ROI_X = LENGTH_REL * HEIGHT
+ROI_Y = HEIGHT
 images = []
 images_stab = []
 last = None
@@ -48,7 +53,13 @@ def stabilize(img, reference):
     return warpAffine(img, M)
 
 def otsu(img):
-    return cv.threshold(img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
+    interpolation = cv.INTER_CUBIC
+    if OTSU_SCALE == 1:
+        return cv.threshold(img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
+    img = cv.resize(img, None, None, OTSU_SCALE, OTSU_SCALE, interpolation)
+    ret, img = cv.threshold(img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
+    log(img.shape)
+    return ret, cv.resize(img, None, None, 1/OTSU_SCALE, 1/OTSU_SCALE, interpolation)
 
 def process(img, ids, corners):
     global images
@@ -103,23 +114,38 @@ def process(img, ids, corners):
     d = (int(xd[0]), int(xd[1]))
 
     pts1 = np.float32([xa,xb,xc,xd])
-    offset = 10 # TODO: yanky
+    # calculate offset relative to y-Axis, because we know the AruCo marker is y tall
+    # and length in x direction changes with different displays
+    offset = ROI_Y/10
     pts2 = np.float32([[-offset,0], [-offset,ROI_Y], [ROI_X+offset, 0], [ROI_X+offset, ROI_Y]])
-    M = cv.getPerspectiveTransform(pts1,pts2)
-    dst = cv.warpPerspective(img,M,(ROI_X, ROI_Y),flags=cv.INTER_LINEAR)
-    dst = cv.cvtColor(dst, cv.COLOR_BGR2GRAY)
-    images.append(dst)
-    dst3 = dst.copy()
-    preavg = avg(images_stab, AVG)
+    #pts2 = np.float32([[offset,0], [offset,ROI_Y], [ROI_X-offset, 0], [ROI_X-offset, ROI_Y]])
 
-    if len(images_stab) > 0:
-        #dst3 = stabilize(dst3, composite)
-        dst3 = stabilize(dst3, preavg)
-    images_stab.append(dst3)
-    cnt = len(images)
-    log("len "+str(cnt))
+    M = cv.getPerspectiveTransform(pts1,pts2)
+    # increasing dsize here will just copy more pixels from the original image
+    dst = cv.warpPerspective(img,M,(ROI_X, ROI_Y),flags=INTERPOLATION)
+    dst = cv.cvtColor(dst, cv.COLOR_BGR2GRAY)
+    #cv.imshow("GGGG",dst)
+    #cv.waitKey(0)
+    images.append(dst)
+
+    if meta.true("stabilize"):
+        dst3 = dst.copy()
+        if len(images_stab) > 0:
+            dst3 = stabilize(dst3, last)
+        images_stab.append(dst3)
+        cx2 = avg(images_stab, AVG)
+        last = cx2
+        ret, cx3 = otsu(cx2)
+        if meta.true("histNormalize"):
+            cx2 = cv.equalizeHist(cx2)
+        cv.imshow("composite stab", cx2)
+        cv.imshow("composite stab otsu", cx3)
 
     c2 = avg(images, AVG)
+    if meta.true("ocrComposite"):
+        ocr = c2.copy()
+    else:
+        ocr = dst
     ret, c3 = otsu(c2)
     if meta.true("histNormalize"):
         c2 = cv.equalizeHist(c2)
@@ -127,13 +153,8 @@ def process(img, ids, corners):
     isave(c3,"composite-otsu")
     isave(c2, "composite")
     cv.imshow("composite otsu", c3)
-
-    cx2 = avg(images_stab, AVG)
-    ret, cx3 = otsu(cx2)
-    if meta.true("histNormalize"):
-        cx2 = cv.equalizeHist(cx2)
-    cv.imshow("composite stab", cx2)
-    cv.imshow("composite stab otsu", cx3)
+    cnt = len(images)
+    log("len "+str(cnt))
 
     isave(dst, "roi-gray")
     ret, dst2 = otsu(dst)
@@ -153,7 +174,7 @@ def process(img, ids, corners):
         cv.line(img, b, d, (0,0,255), 5)
         cv.line(img, c, d, (0,0,255), 5)
         isave(img, "detect-marked")
-    last = dst
 
-    segments.process(c2)
+    if meta.true("ocr"):
+        segments.process(ocr, HEIGHT)
     return img
