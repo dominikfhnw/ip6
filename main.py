@@ -5,18 +5,17 @@ import aruco
 import correct
 import calib
 import cv2 as cv
-import socket
-import sys
 import pprint
-from timestring import timestring, iso8601
 from isave import isave
+import segments
+import meta
 
 Camera = 0 # which camera to use
 Mirror = False # flip image (for webcam)
 Correct = True # apply camera calibration
 Detect = True # detect and do stuff with aruco markers (the whole point here)
 captureAPI = cv.CAP_ANY
-if sys.platform == "win32":
+if meta.get("platform") == "win32":
     # default API is really slow to start on windows
     # and does not support changing resolution on my machine
     captureAPI = cv.CAP_DSHOW
@@ -25,10 +24,9 @@ log, dbg, logger = log.auto(__name__)
 # why oh why does the python logger not have a "notice" prio?
 logger.warning("Seven segment display detector")
 
-log("Python "+sys.version)
-log("OpenCV-Python "+cv.__version__)
-#print("Platform "+platform.platform())
-log("Host "+socket.gethostname()+" on "+sys.platform)
+log("Python "+meta.get("python"))
+log("OpenCV-Python "+meta.get("opencv"))
+log("Host "+meta.get("host")+" on "+meta.get("platform"))
 dbg("sysinfo done")
 
 def closed(str):
@@ -46,10 +44,10 @@ def res(x,y):
 
 def showfps(img):
     framecount = 30
-    ft = len(meta["ft"])
+    ft = len(meta.get("ft"))
     if ft > framecount:
         ft = framecount
-    fps = int(ft / sum(meta["ft"][-ft:]))
+    fps = int(ft / sum(meta.get("ft")[-ft:]))
     cv.putText(img, f'{fps}fps',
                (10,30),
                fontFace=cv.FONT_HERSHEY_PLAIN,
@@ -70,30 +68,15 @@ height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
 log(f"Camera {Camera}: {width}x{height}, {fps}fps")
 log(f"Backend: {cap.getBackendName()}")
 dbg("camera initialized")
-meta = dict(
-    python = sys.version,
-    opencv = cv.__version__,
-    host = socket.gethostname(),
-    platform = sys.platform,
-    start = iso8601(),
+meta.set(dict(
     backend = cap.getBackendName(),
     camera = Camera,
     width = int(width),
     height = int(height),
-    frame = 0,
-    ft = [0.033],
-    drawAruco = True,
-    drawRejects = False,
-    drawROI = True,
-    histNormalize = True,
-)
-pp = pprint.PrettyPrinter(sort_dicts=False).pformat
-#pp(meta)
-log(pp(meta))
+))
 
 log("init time: "+timey.fromstr())
 log("beginning main loop")
-
 while True:
     t1 = timey.time()
     # Capture frame-by-frame
@@ -103,7 +86,7 @@ while True:
         logger.fatal("Can't receive frame (stream end?). Exiting ...")
         break
 
-    meta["key"] = None
+    meta.unset("key")
 
     match chr(cv.pollKey() & 0xFF).lower():
         case 'q':
@@ -115,13 +98,13 @@ while True:
         case '3':
             res(10,10)
         case 'n':
-            meta["histNormalize"] = not meta["histNormalize"]
+            meta.toggle("histNormalize")
         case 'm':
             Mirror = not Mirror
         case 'c':
             Correct = not Correct
         case 'r':
-            meta["key"] = "r"
+            meta.set("key", "r")
         case 's':
             isave(frame, "frame")
             isave(out, "out")
@@ -140,15 +123,15 @@ while True:
     if Correct:
         out = correct.process(out)
     if Detect:
-        out = aruco.process(out, meta)
+        out = aruco.process(out)
     cv.imshow('out', out)
 
     if closed("frame") or closed("out"):
         break
 
-    meta["frame"] += 1
+    meta.inc("frame")
     t2 = timey.time()
-    meta["ft"].append(t2 - t1 + 0.000001)
+    meta.get("ft").append(t2 - t1 + 0.000001)
     #log(f'{1/(t2 - t1 + 0.0001):.0f}fps')
 
 cv.destroyAllWindows()

@@ -4,6 +4,7 @@ import numpy as np
 from isave import isave
 from math import floor, ceil
 import segments
+import meta
 
 log, dbg, logger = log.auto(__name__)
 
@@ -49,12 +50,12 @@ def stabilize(img, reference):
 def otsu(img):
     return cv.threshold(img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
 
-def process(img, ids, corners, meta=None):
+def process(img, ids, corners):
     global images
     global images_stab
     global last
 
-    if meta["key"] == "r":
+    if meta.get("key") == "r":
         log("RESET")
         images = []
         images_stab = []
@@ -120,7 +121,7 @@ def process(img, ids, corners, meta=None):
 
     c2 = avg(images, AVG)
     ret, c3 = otsu(c2)
-    if meta["histNormalize"]:
+    if meta.true("histNormalize"):
         c2 = cv.equalizeHist(c2)
     cv.imshow("composite", c2)
     isave(c3,"composite-otsu")
@@ -129,14 +130,14 @@ def process(img, ids, corners, meta=None):
 
     cx2 = avg(images_stab, AVG)
     ret, cx3 = otsu(cx2)
-    if meta["histNormalize"]:
+    if meta.true("histNormalize"):
         cx2 = cv.equalizeHist(cx2)
     cv.imshow("composite stab", cx2)
     cv.imshow("composite stab otsu", cx3)
 
     isave(dst, "roi-gray")
     ret, dst2 = otsu(dst)
-    if meta["histNormalize"]:
+    if meta.true("histNormalize"):
         dst = cv.equalizeHist(dst)
 
     cv.imshow("roi-thresh", dst2)
@@ -146,7 +147,7 @@ def process(img, ids, corners, meta=None):
     cv.imshow("ROI", dst)
 
     isave(img, "detect-raw")
-    if meta["drawROI"]:
+    if meta.true("drawROI"):
         cv.line(img, a, b, (0,0,255), 5)
         cv.line(img, a, c, (0,0,255), 5)
         cv.line(img, b, d, (0,0,255), 5)
@@ -154,5 +155,5 @@ def process(img, ids, corners, meta=None):
         isave(img, "detect-marked")
     last = dst
 
-    segments.process(c2, meta)
+    segments.process(c2)
     return img

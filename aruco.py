@@ -1,6 +1,7 @@
 import log
 import cv2 as cv
 import extract
+import meta
 
 log, dbg, logger = log.auto(__name__)
 
@@ -19,14 +20,14 @@ param.minMarkerPerimeterRate = PERIMETER
 param.cornerRefinementMethod = REFINE
 det = cv.aruco.ArucoDetector(dictionary=arucoDict, detectorParams=param)
 
-def process(img, meta):
+def process(img):
 
     corners, ids, rejectedImgPoints = det.detectMarkers(img)
     if ids is not None:
-        img = extract.process(img, ids, corners, meta)
-    if meta["drawAruco"]:
+        img = extract.process(img, ids, corners)
+    if meta.true("drawAruco"):
         img = cv.aruco.drawDetectedMarkers(img, corners, ids)
-    if meta["drawRejects"]:
+    if meta.true("drawRejects"):
         img = cv.aruco.drawDetectedMarkers(img, rejectedImgPoints)
 
     return img
