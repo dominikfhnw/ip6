@@ -70,6 +70,7 @@ def process(img, ids, corners):
             maxx = ceil(t[0])
         if t[1] > maxy:
             maxy = ceil(t[1])
+    meta.set("res_point", (minx, maxy))
     roirect = img[miny:maxy, minx:maxx]
     cv.imshow("roirect", roirect)
     isave(roirect, "roi-rect")
