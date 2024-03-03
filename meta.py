@@ -11,23 +11,22 @@ meta = dict(
     host = socket.gethostname(),
     platform = sys.platform,
     start = iso8601(),
-#    backend = cap.getBackendName(),
-#    camera = Camera,
-#    width = int(width),
-#    height = int(height),
     frame = 0,
     ft = [0.033],
-    drawAruco = True,
+    drawAruco = False,
     drawRejects = False,
     drawROI = True,
-    histNormalize = True,
+    histNormalize = False,
+    stabilize = False,
+    ocr = True,
+    ocrComposite = True,
 )
 
 def get(name):
     return meta[name]
 
 def true(name):
-    return meta[name] == True
+    return bool(meta[name])
 
 # assumes boolean True if no value was given
 def setkey(name, val=True):
