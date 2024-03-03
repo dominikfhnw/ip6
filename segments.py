@@ -2,6 +2,7 @@ import log
 import cv2 as cv
 import meta
 import numpy as np
+from imagefunctions import *
 
 log, dbg, logger = log.auto(__name__)
 
@@ -12,9 +13,15 @@ def process(img, height):
     global FACTOR
     FACTOR=int(height/100)
 
-    img = img - np.min(img)
-    img = img * (256/np.max(img))
-    img = cv.cvtColor(img.astype("uint8"), cv.COLOR_GRAY2BGR)
+    img = histstretch( img )
+    thresh, ots = otsu(img)
+    thresh_norm = thresh/255
+    log(f"THRESHOLD: {thresh}")
+    #_, img = cv.threshold(img,thresh-20,1000,cv.THRESH_BINARY)
+    gauss = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
+    #img = gauss
+    #img = ots
+    gui = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
 
     x1, y1 = 0,0
     start=0
@@ -22,7 +29,7 @@ def process(img, height):
 
     xoffset, xmax, xstep = 12, 250, 46
     for i in range(xoffset, xmax, xstep):
-        x = letter(img, i,x1,y1,str(start))
+        x = letter(img, gui, i,x1,y1,str(start))
         l[start] = x
         start += 1
     dbg("NUMBER: "+str(l))
@@ -31,8 +38,12 @@ def process(img, height):
     l2 = l - min
     max = np.max(l2)
     l2 = l2 / max
-    l2 = 1 - l2
-    l2 = np.round(l2)
+    if True: # invert
+        l2 = 1 - l2
+        thresh_norm = 1 - thresh_norm
+    #l2 = np.round(l2)
+    # Use Otsu's value as threshold
+    l2 = (l2 > thresh_norm).astype("int");
     dbg("NUMBER2: "+str(l2))
 
     # alternative font
@@ -67,17 +78,18 @@ def process(img, height):
         else:
             n = "#"
         out += n
-        cv.putText(img, n,
+        cv.putText(gui, n,
                    (FACTOR*(xoffset+i*xstep),FACTOR*95),
                    fontFace=cv.FONT_HERSHEY_DUPLEX,
                    fontScale=1,
                    color=(255, 0, 0)
         )
         i += 1
-    cv.imshow("ocr", img)
+    cv.imshow("ocr", gui)
+    meta.set("result", out)
     log(f"Number: {out}")
 
-def rec(img,x,y,w,h,color=(0,0,255), name=None):
+def rec(img,gui,x,y,w,h,color=(0,0,255), name=None):
     x2=x+w
     y2=y+h
 
@@ -86,35 +98,31 @@ def rec(img,x,y,w,h,color=(0,0,255), name=None):
     x2 *= FACTOR
     y2 *= FACTOR
 
-    #log("SHAPE "+str(img.ndim))
-    if img.ndim == 3:
-        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-    else:
-        gray = img.copy()
-    i2 = gray[y:y2, x:x2]
+    i2 = img[y:y2, x:x2]
     #cv.imshow("seg", i2)
     #cv.waitKey(0)
     #log("SHAPE "+str(i2.shape))
 
     pixsum = int(cv.sumElems(i2)[0])
+
     #log("SUM "+name+" "+str(pixsum))
     #log(f"SEG {name} ({x},{y}) ({x2},{y2})")
-    cv.rectangle(img, (x,y), (x2,y2), color)
+    cv.rectangle(gui, (x,y), (x2,y2), color)
     return pixsum
 
-def letter(img,x,x1,y1,name=None):
+def letter(img, gui, x,x1,y1,name=None):
     y=11
     green=(0,255,0)
     s = dict()
-    rec(img,x,y,36,73, name=name)
-    s["a"] = rec(img,x+8,y+2,20,5, green, name+":a")
-    s["g"] = rec(img,x+8,y+33,20,5, green, name+":g")
-    s["d"] = rec(img,x+8,y+64,20,5, green, name+":d")
+    #rec(img,gui, x,y,36,73, name=name)
+    s["a"] = rec(img,gui,x+8,y+2,20,5, green, name+":a")
+    s["g"] = rec(img,gui,x+8,y+33,20,5, green, name+":g")
+    s["d"] = rec(img,gui,x+8,y+64,20,5, green, name+":d")
 
-    s["f"] = rec(img,x+2,y+10,5,20, green, name+":f")
-    s["b"] = rec(img,x+29,y+10,5,20, green, name+":b")
-    s["e"] = rec(img,x+2,y+41,5,20, green, name+":e")
-    s["c"] = rec(img,x+29,y+41,5,20, green, name+":c")
+    s["f"] = rec(img,gui,x+2,y+10,5,20, green, name+":f")
+    s["b"] = rec(img,gui,x+29,y+10,5,20, green, name+":b")
+    s["e"] = rec(img,gui,x+2,y+41,5,20, green, name+":e")
+    s["c"] = rec(img,gui,x+29,y+41,5,20, green, name+":c")
 
     t = np.array([s["a"], s["b"], s["c"], s["d"], s["e"], s["f"], s["g"]])
 
@@ -131,8 +139,13 @@ def seg():
 
     file = "composite20240301-160253.jpg" # known good
     file="roi-gray20240302-212209.jpg"
-    input = cv.imread("out/"+file)
+    file="needs-local-thresh.png"
+    #file="smeared.png"
+    input = cv.imread(""+file)
     cv.imshow("seg", input)
+    input = cv.cvtColor(input, cv.COLOR_BGR2GRAY)
+    input = histstretch( input )
+
     #segments.process(input, None)
     #
 
