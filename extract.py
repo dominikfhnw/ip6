@@ -3,6 +3,7 @@ import cv2 as cv
 import numpy as np
 from isave import isave
 from math import floor, ceil
+from imagefunctions import histstretch, stabilize, avg, otsu
 import segments
 import meta
 
@@ -12,7 +13,6 @@ LENGTH_REL = 3
 HEIGHT = 300
 AVG = 10
 INTERPOLATION = cv.INTER_LINEAR
-OTSU_SCALE = 4
 
 
 ROI_X = LENGTH_REL * HEIGHT
@@ -21,45 +21,12 @@ images = []
 images_stab = []
 last = None
 
-def avg(image, count):
-    composite = np.zeros(shape=(ROI_Y,ROI_X), dtype=np.uint32)
-    last = image[-count:]
-    for i in last:
-        composite += i
-    return (composite/count).astype('uint8')
+def normalize(img):
+    if meta.true("histNormalize"):
+        return cv.equalizeHist(img)
+    else:
+        return img
 
-def phaseCorrelate(img1, img2):
-    #log("SHAPE:"+str(img2.shape))
-    if img1.ndim == 3:
-        img1 = cv.cvtColor(img1, cv.COLOR_BGR2GRAY)
-    if img2.ndim == 3:
-        img2 = cv.cvtColor(img2, cv.COLOR_BGR2GRAY)
-    ret = cv.phaseCorrelate(np.float32(img1),np.float32(img2))
-    log("correlation signal power: "+str(ret[1]))
-    return ret[0]
-
-def warpAffine(img, M, borderValue=(255,255,255)):
-    return cv.warpAffine(img, M, (img.shape[1], img.shape[0]),borderValue=borderValue)
-
-def translationMatrix(point):
-    return np.array([
-        [1, 0, point[0]],
-        [0, 1, point[1]]
-    ]).astype('float32')
-
-def stabilize(img, reference):
-    r = phaseCorrelate(img, reference)
-    M = translationMatrix(r)
-    return warpAffine(img, M)
-
-def otsu(img):
-    interpolation = cv.INTER_CUBIC
-    if OTSU_SCALE == 1:
-        return cv.threshold(img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
-    img = cv.resize(img, None, None, OTSU_SCALE, OTSU_SCALE, interpolation)
-    ret, img = cv.threshold(img,0,255,cv.THRESH_BINARY+cv.THRESH_OTSU)
-    log(img.shape)
-    return ret, cv.resize(img, None, None, 1/OTSU_SCALE, 1/OTSU_SCALE, interpolation)
 
 def process(img, ids, corners):
     global images
@@ -136,19 +103,20 @@ def process(img, ids, corners):
         cx2 = avg(images_stab, AVG)
         last = cx2
         ret, cx3 = otsu(cx2)
-        if meta.true("histNormalize"):
-            cx2 = cv.equalizeHist(cx2)
+        cx2 = normalize(cx2)
         cv.imshow("composite stab", cx2)
         cv.imshow("composite stab otsu", cx3)
 
     c2 = avg(images, AVG)
+    #log(c2)
+    ret, c3 = otsu(c2)
+    #log("OTSU thresh: "+str(ret))
     if meta.true("ocrComposite"):
         ocr = c2.copy()
     else:
         ocr = dst
-    ret, c3 = otsu(c2)
-    if meta.true("histNormalize"):
-        c2 = cv.equalizeHist(c2)
+
+    c2 = normalize(c2)
     cv.imshow("composite", c2)
     isave(c3,"composite-otsu")
     isave(c2, "composite")
@@ -158,8 +126,7 @@ def process(img, ids, corners):
 
     isave(dst, "roi-gray")
     ret, dst2 = otsu(dst)
-    if meta.true("histNormalize"):
-        dst = cv.equalizeHist(dst)
+    dst = normalize(dst)
 
     cv.imshow("roi-thresh", dst2)
     isave(dst2, "roi-thresh")
