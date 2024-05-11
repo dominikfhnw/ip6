@@ -6,10 +6,11 @@ from imagefunctions import *
 
 log, dbg, logger = log.auto(__name__)
 
-#FACTOR = 3
-
 def process(img, height):
     # TODO: ugly
+    # Global scaling factor. Initially all input images were 100px high
+    # This keeps the same constants for all possible input image heights,
+    # and allows the constants to be treated as "from 100%"
     global FACTOR
     FACTOR=int(height/100)
 
@@ -18,35 +19,71 @@ def process(img, height):
     thresh_norm = thresh/255
     log(f"THRESHOLD: {thresh}")
     #_, img = cv.threshold(img,thresh-20,1000,cv.THRESH_BINARY)
-    gauss = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
-    #img = gauss
-    #img = ots
-    gui = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
+    if meta.true("thresh"):
+        gauss = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
+        img = gauss
 
-    x1, y1 = 0,0
+    gui = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
+    xoffset, xmax, xstep = 12, 250, 46
+    mat = extractdigits(img, gui, xoffset, xmax, xstep)
+    dbg("MAT1 "+str(mat))
+    mat = normalize_matrix(mat)
+    mat = threshold_matrix(mat, thresh_norm)
+    dbg("MAT2 "+str(mat))
+
+    digits = []
+    for i, digit in enumerate(mat):
+        dbg(f"NUM {i}: {mat[i]}")
+        digits.append(digit_match(digit))
+
+    for i, n in enumerate(digits):
+        text(gui, n, xoffset+i*xstep, 95)
+    cv.imshow("ocr", gui)
+
+    out = ''.join(digits)
+    meta.set("result", out)
+    log(f"Number: {out}")
+
+def text(gui, text, x, y):
+    cv.putText(gui, text,
+                (FACTOR*x,FACTOR*y),
+               fontFace=cv.FONT_HERSHEY_DUPLEX,
+               fontScale=1,
+               color=(255, 0, 0)
+               )
+
+
+def extractdigits(img, gui, xoffset, xmax, xstep):
     start=0
     l = np.empty((6,7))
 
-    xoffset, xmax, xstep = 12, 250, 46
     for i in range(xoffset, xmax, xstep):
-        x = letter(img, gui, i,x1,y1,str(start))
+        x = extractdigit(img, gui, i)
         l[start] = x
         start += 1
     dbg("NUMBER: "+str(l))
+
+    return l
+
+# normalize to range [0,1]
+def normalize_matrix(l):
     min = np.min(l)
-    #l2 = np.subtract(l, min)
     l2 = l - min
     max = np.max(l2)
     l2 = l2 / max
-    if True: # invert
-        l2 = 1 - l2
-        thresh_norm = 1 - thresh_norm
-    #l2 = np.round(l2)
-    # Use Otsu's value as threshold
-    l2 = (l2 > thresh_norm).astype("int");
-    dbg("NUMBER2: "+str(l2))
 
-    # alternative font
+    return l2
+
+def threshold_matrix(l, thresh):
+    if meta.get("invertDigits"): # invert
+        l = 1 - l
+        thresh = 1 - thresh
+    # Use Otsu's value as threshold
+    l = (l > thresh).astype("int");
+    return l
+
+def digit_match(digit, font=0):
+    # alternative font. single character to not mess up the array below
     a = 0
     digits = np.array([
         [1, 1, 1, 1, 1, 1, 0], # 0
@@ -62,34 +99,18 @@ def process(img, height):
         #[0, 0, 0, 0, 0, 0, 1], # -
         #[0, 0, 0, 0, 0, 0, 0], # (blank)
     ])
-    i=0
-    out=""
-    for num in l2:
-        result=-1
-        dbg(f"NUM {i}: {l2[i]}")
-        j=0
-        for ref in digits:
-            if np.array_equal(digits[j], l2[i]):
-                dbg(f"MATCH {j}")
-                result=j
-            j += 1
-        if result >= 0:
-            n = str(result)
-        else:
-            n = "#"
-        out += n
-        cv.putText(gui, n,
-                   (FACTOR*(xoffset+i*xstep),FACTOR*95),
-                   fontFace=cv.FONT_HERSHEY_DUPLEX,
-                   fontScale=1,
-                   color=(255, 0, 0)
-        )
-        i += 1
-    cv.imshow("ocr", gui)
-    meta.set("result", out)
-    log(f"Number: {out}")
+    result = '#'
+    j=0
+    for ref in digits:
+        if np.array_equal(ref, digit):
+            dbg(f"MATCH {j}")
+            result=str(j)
+        j += 1
 
-def rec(img,gui,x,y,w,h,color=(0,0,255), name=None):
+    return result
+
+
+def rec(img,gui,x,y,w,h,color=(0,255,0)):
     x2=x+w
     y2=y+h
 
@@ -99,35 +120,27 @@ def rec(img,gui,x,y,w,h,color=(0,0,255), name=None):
     y2 *= FACTOR
 
     i2 = img[y:y2, x:x2]
-    #cv.imshow("seg", i2)
-    #cv.waitKey(0)
-    #log("SHAPE "+str(i2.shape))
 
     pixsum = int(cv.sumElems(i2)[0])
 
-    #log("SUM "+name+" "+str(pixsum))
-    #log(f"SEG {name} ({x},{y}) ({x2},{y2})")
     cv.rectangle(gui, (x,y), (x2,y2), color)
     return pixsum
 
-def letter(img, gui, x,x1,y1,name=None):
+def extractdigit(img, gui, x):
     y=11
-    green=(0,255,0)
     s = dict()
-    #rec(img,gui, x,y,36,73, name=name)
-    s["a"] = rec(img,gui,x+8,y+2,20,5, green, name+":a")
-    s["g"] = rec(img,gui,x+8,y+33,20,5, green, name+":g")
-    s["d"] = rec(img,gui,x+8,y+64,20,5, green, name+":d")
 
-    s["f"] = rec(img,gui,x+2,y+10,5,20, green, name+":f")
-    s["b"] = rec(img,gui,x+29,y+10,5,20, green, name+":b")
-    s["e"] = rec(img,gui,x+2,y+41,5,20, green, name+":e")
-    s["c"] = rec(img,gui,x+29,y+41,5,20, green, name+":c")
+    s["a"] = rec(img,gui,x+8,y+2,20,5)
+    s["g"] = rec(img,gui,x+8,y+33,20,5)
+    s["d"] = rec(img,gui,x+8,y+64,20,5)
+
+    s["f"] = rec(img,gui,x+2,y+10,5,20)
+    s["b"] = rec(img,gui,x+29,y+10,5,20)
+    s["e"] = rec(img,gui,x+2,y+41,5,20)
+    s["c"] = rec(img,gui,x+29,y+41,5,20)
 
     t = np.array([s["a"], s["b"], s["c"], s["d"], s["e"], s["f"], s["g"]])
 
-
-    #log("SEGMENTS: "+str(s))
     return t
 
 def seg():
@@ -138,13 +151,13 @@ def seg():
     file ="composite20240301-165201.jpg"
 
     file = "composite20240301-160253.jpg" # known good
-    file="roi-gray20240302-212209.jpg"
-    file="needs-local-thresh.png"
+    #file="roi-gray20240302-212209.jpg"
+    #file="needs-local-thresh.png"
     #file="smeared.png"
-    input = cv.imread(""+file)
+    input = cv.imread("out/"+file)
     cv.imshow("seg", input)
     input = cv.cvtColor(input, cv.COLOR_BGR2GRAY)
-    input = histstretch( input )
+    #input = histstretch( input )
 
     #segments.process(input, None)
     #
