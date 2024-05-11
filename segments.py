@@ -1,7 +1,5 @@
 import log
-import cv2 as cv
 import meta
-import numpy as np
 from imagefunctions import *
 
 log, dbg, logger = log.auto(__name__)
@@ -79,7 +77,7 @@ def threshold_matrix(l, thresh):
         l = 1 - l
         thresh = 1 - thresh
     # Use Otsu's value as threshold
-    l = (l > thresh).astype("int");
+    l = (l > thresh).astype("int")
     return l
 
 def digit_match(digit, font=0):
