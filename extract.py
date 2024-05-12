@@ -7,7 +7,7 @@ from imagefunctions import stabilize, avg, otsu
 import segments
 import meta
 
-log, dbg, logger = log.auto(__name__)
+log, dbg, logger, isdbg = log.auto2(__name__)
 
 LENGTH_REL = 3
 HEIGHT = 300
@@ -44,19 +44,19 @@ def process(img, ids, corners):
     for num, value in enumerate(ids):
         if value == 4:
             left = num
-            log("found left:"+str(num))
+            dbg("found left:"+str(num))
         if value == 7:
             right = num
-            log("found right:"+str(num))
+            dbg("found right:"+str(num))
 
     if left is None or right is None:
         return img
 
-    log("found both")
+    dbg("found both")
     l = corners[left]
     r = corners[right]
 
-    log("right: "+str(corners[right]))
+    if isdbg: dbg("right: "+str(corners[right]))
     xa = l[0][1]
     xb = l[0][2]
     xc = r[0][0]
@@ -77,7 +77,7 @@ def process(img, ids, corners):
     if debug:
         cv.imshow("roirect", roirect)
     isave(roirect, "roi-rect")
-    log(f"minmax: {minx},{miny} {maxx},{maxy}")
+    dbg(f"minmax: {minx},{miny} {maxx},{maxy}")
 
     a = (int(xa[0]), int(xa[1]))
     b = (int(xb[0]), int(xb[1]))
