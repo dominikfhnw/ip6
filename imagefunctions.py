@@ -1,6 +1,11 @@
 import numpy as np
 import cv2 as cv
 
+import log
+log, dbg, logger = log.auto(__name__)
+
+__all__ = ['histstretch', 'avg', 'phaseCorrelate', 'warpAffine', 'translationMatrix', 'stabilize', 'otsu', 'adaptivethresh', 'otsu_linearize']
+
 OTSU_SCALE = 1
 
 # TODO: only works with uint8
@@ -43,10 +48,38 @@ def stabilize(img, reference):
     return warpAffine(img, M)
 
 def otsu(img):
-    interpolation = cv.INTER_CUBIC
     if OTSU_SCALE == 1:
         return cv.threshold(img,0,1000,cv.THRESH_BINARY+cv.THRESH_OTSU)
+    interpolation = cv.INTER_CUBIC
     img = cv.resize(img, None, None, OTSU_SCALE, OTSU_SCALE, interpolation)
     ret, img = cv.threshold(img,None,None,cv.THRESH_BINARY+cv.THRESH_OTSU)
     #log(img.shape)
     return ret, cv.resize(img, None, 1000, 1/OTSU_SCALE, 1/OTSU_SCALE, interpolation)
+
+def otsu_map(input, thresh):
+    norm = thresh/127
+    if input <= thresh:
+        r = input / norm
+        return r
+    else:
+        r = input - thresh
+        max = 255 - thresh
+        scale = 255 / max
+        r = r * scale
+        r = 127 + r/2
+
+        return r
+
+def otsu_linearize(img):
+    thresh_full, _ = otsu(img)
+    thresh = thresh_full/255
+    dbg(f"LLIIIIIII {thresh_full} {thresh}")
+
+    #return np.where(img < thresh, int(img * thresh), int((255-img)*thresh))
+    map = np.vectorize(otsu_map, otypes=[img.dtype])
+    return map(img, thresh_full)
+
+
+def adaptivethresh(img):
+    return cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
+
