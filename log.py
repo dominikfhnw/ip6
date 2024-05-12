@@ -1,4 +1,5 @@
 import logging
+import meta
 
 logger = logging
 #logging.basicConfig(format='%(asctime)s: %(message)s', level=logging.INFO)
@@ -8,7 +9,7 @@ logging.basicConfig(
     #format='%(asctime)s.%(msecs)03d %(levelname)s:%(module)s: %(message)s',
     format='%(asctime)s:%(module)s: %(message)s',
     #datefmt='%Y-%m-%d %H:%M:%S',
-    level=logging.INFO
+    level=meta.get("logLevel")
 )
 logger.info("logger started")
 
