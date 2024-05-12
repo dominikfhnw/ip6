@@ -25,3 +25,7 @@ def init(name):
 def auto(name):
     logger = init(name)
     return (logger.info, logger.debug, logger)
+
+def auto2(name):
+    logger = init(name)
+    return (logger.info, logger.debug, logger, logger.isEnabledFor(logging.DEBUG))
