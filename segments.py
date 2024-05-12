@@ -1,6 +1,6 @@
 import log
-import meta
 from imagefunctions import *
+import match
 
 log, dbg, logger = log.auto(__name__)
 
@@ -11,43 +11,58 @@ def process(img, height):
     # and allows the constants to be treated as "from 100%"
     global FACTOR
     FACTOR=int(height/100)
+    dbg(f"FACTOR: {FACTOR}")
 
     img = histstretch( img )
     thresh, ots = otsu(img)
     thresh_norm = thresh/255
     log(f"THRESHOLD: {thresh}")
     #_, img = cv.threshold(img,thresh-20,1000,cv.THRESH_BINARY)
-    if meta.true("thresh"):
-        gauss = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
-        img = gauss
+    gauss = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
+    #gauss2 = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 13, 4)
+
+    # if meta.true("thresh"):
+    #     gauss = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
+    #     img = gauss
+
+    guiocr(img, thresh_norm)
+    guiocr(gauss, thresh_norm, "ocr2")
+    #guiocr(gauss2, thresh_norm, "ocr2b")
+    #guiocr(gauss, thresh_norm, "ocr3", factor=3)
+    #guiocr(gauss2, thresh_norm, "ocr3b", factor=3)
+
+def guiocr(img, threshold=0.5, name="ocr", factor:int=1):
+    # TODO: get via meta? or as param from lower layer
+    xoffset, xmax, xstep = 12, 250, 46
+
+    global FACTOR
+    if factor != 1:
+        dbg(f"factor before: {FACTOR}")
+        FACTOR = int(FACTOR/factor)
+        dbg(f"factor after: {FACTOR}")
+        img = cv.resize(img, None, None, 1/factor, 1/factor, cv.INTER_CUBIC)
 
     gui = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
-    xoffset, xmax, xstep = 12, 250, 46
     mat = extractdigits(img, gui, xoffset, xmax, xstep)
-    dbg("MAT1 "+str(mat))
-    mat = normalize_matrix(mat)
-    mat = threshold_matrix(mat, thresh_norm)
-    dbg("MAT2 "+str(mat))
+    digits = match.process(mat, threshold)
+    if factor != 1:
+        FACTOR = int(FACTOR*factor)
+        #img = cv.resize(img, None, None, factor, factor, cv.INTER_CUBIC)
+        gui = cv.resize(gui, None, None, factor, factor, cv.INTER_CUBIC)
 
-    digits = []
-    for i, digit in enumerate(mat):
-        dbg(f"NUM {i}: {mat[i]}")
-        digits.append(digit_match(digit))
-
-    for i, n in enumerate(digits):
+    for i, tuple in enumerate(digits):
+        n, conf = tuple
         text(gui, n, xoffset+i*xstep, 95)
-    cv.imshow("ocr", gui)
+        text(gui, str(conf), xoffset+i*xstep+15, 95, (0,0,255))
 
-    out = ''.join(digits)
-    meta.set("result", out)
-    log(f"Number: {out}")
+    cv.imshow(name, gui)
 
-def text(gui, text, x, y):
+def text(gui, text, x, y, color=(255,0,0)):
     cv.putText(gui, text,
                 (FACTOR*x,FACTOR*y),
                fontFace=cv.FONT_HERSHEY_DUPLEX,
-               fontScale=1,
-               color=(255, 0, 0)
+               fontScale=FACTOR/3,
+               color=color
                )
 
 
@@ -59,53 +74,8 @@ def extractdigits(img, gui, xoffset, xmax, xstep):
         x = extractdigit(img, gui, i)
         l[start] = x
         start += 1
-    dbg("NUMBER: "+str(l))
 
     return l
-
-# normalize to range [0,1]
-def normalize_matrix(l):
-    min = np.min(l)
-    l2 = l - min
-    max = np.max(l2)
-    l2 = l2 / max
-
-    return l2
-
-def threshold_matrix(l, thresh):
-    if meta.get("invertDigits"): # invert
-        l = 1 - l
-        thresh = 1 - thresh
-    # Use Otsu's value as threshold
-    l = (l > thresh).astype("int")
-    return l
-
-def digit_match(digit, font=0):
-    # alternative font. single character to not mess up the array below
-    a = 0
-    digits = np.array([
-        [1, 1, 1, 1, 1, 1, 0], # 0
-        [0, 1, 1, 0, 0, 0, 0], # 1
-        [1, 1, 0, 1, 1, 0, 1], # 2
-        [1, 1, 1, 1, 0, 0, 1], # 3
-        [0, 1, 1, 0, 0, 1, 1], # 4
-        [1, 0, 1, 1, 0, 1, 1], # 5
-        [a, 0, 1, 1, 1, 1, 1], # 6
-        [1, 1, 1, 0, 0, 0, 0], # 7
-        [1, 1, 1, 1, 1, 1, 1], # 8
-        [1, 1, 1, a, 0, 1, 1], # 9
-        #[0, 0, 0, 0, 0, 0, 1], # -
-        #[0, 0, 0, 0, 0, 0, 0], # (blank)
-    ])
-    result = '#'
-    j=0
-    for ref in digits:
-        if np.array_equal(ref, digit):
-            dbg(f"MATCH {j}")
-            result=str(j)
-        j += 1
-
-    return result
 
 
 def rec(img,gui,x,y,w,h,color=(0,255,0)):
@@ -143,20 +113,27 @@ def extractdigit(img, gui, x):
 
 def seg():
     file = "roi-thresh20240229-220608.jpg"
-    #file = "composite20240301-160253.jpg"
-    file = "roi-thresh20240229-222536.jpg"
-    file = "roi-thresh20240301-145649.jpg"
-    file ="composite20240301-165201.jpg"
+    file = "out/composite20240301-160253.jpg"
+    #file = "out/roi-thresh20240229-222536.jpg"
+    #file = "out/roi-thresh20240301-145649.jpg"
+    #file ="out/composite20240301-165201.jpg"
 
-    file = "composite20240301-160253.jpg" # known good
-    #file="roi-gray20240302-212209.jpg"
+    #file = "out/composite20240301-160253.jpg" # known good
+    #file="out/roi-gray20240302-212209.jpg"
     #file="needs-local-thresh.png"
     #file="smeared.png"
-    input = cv.imread("out/"+file)
+    file="aruco-webcam.png"
+    file="out/roi-gray20240229-191400.jpg"
+    file="out/detect-roi20240229-150920.jpg"
+    file="out/roi-gray20240301-143853.jpg"
+    file="needs-local-thresh.png"
+    #file = "out/composite20240301-160253.jpg" # known good
+
+    input = cv.imread(""+file)
     cv.imshow("seg", input)
     input = cv.cvtColor(input, cv.COLOR_BGR2GRAY)
     #input = histstretch( input )
-
+    #input = cv.resize(input, None, None, 3, 3, cv.INTER_NEAREST)
     #segments.process(input, None)
     #
 
