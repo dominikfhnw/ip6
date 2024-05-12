@@ -1,6 +1,7 @@
 import cv2 as cv
 from timestring import timestring
 import log
+import meta
 
 Enabled = False
 
@@ -14,4 +15,10 @@ def isave(img, name="out", force=False):
     else:
         logger.fatal("Error writing file "+filename)
         exit()
+
+def ishow(name, img):
+    if meta.true('save'):
+        isave(img, name, force=True)
+
+    cv.imshow(name, img)
 
