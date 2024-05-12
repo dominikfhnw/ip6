@@ -18,12 +18,13 @@ meta = dict(
     drawRejects = True,
     drawROI = True,
     histNormalize = False,
-    stabilize = True,
+    stabilize = False,
     ocr = True,
     ocrComposite = True,
     thresh = False,
     logLevel = logging.DEBUG,
     invertDigits = True,
+    extractDebug = False,
 )
 
 def get(name):

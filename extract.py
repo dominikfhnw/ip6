@@ -3,7 +3,7 @@ import cv2 as cv
 import numpy as np
 from isave import isave
 from math import floor, ceil
-from imagefunctions import histstretch, stabilize, avg, otsu
+from imagefunctions import stabilize, avg, otsu
 import segments
 import meta
 
@@ -32,6 +32,8 @@ def process(img, ids, corners):
     global images
     global images_stab
     global last
+
+    debug = meta.get("extractDebug")
 
     if meta.get("key") == "r":
         log("RESET")
@@ -72,7 +74,8 @@ def process(img, ids, corners):
             maxy = ceil(t[1])
     meta.set("res_point", (minx, maxy))
     roirect = img[miny:maxy, minx:maxx]
-    cv.imshow("roirect", roirect)
+    if debug:
+        cv.imshow("roirect", roirect)
     isave(roirect, "roi-rect")
     log(f"minmax: {minx},{miny} {maxx},{maxy}")
 
@@ -103,14 +106,17 @@ def process(img, ids, corners):
         images_stab.append(dst3)
         cx2 = avg(images_stab, AVG)
         last = cx2
-        ret, cx3 = otsu(cx2)
+        if debug:
+            ret, cx3 = otsu(cx2)
         cx2 = normalize(cx2)
-        cv.imshow("composite stab", cx2)
-        cv.imshow("composite stab otsu", cx3)
+        if debug:
+            cv.imshow("composite stab", cx2)
+            cv.imshow("composite stab otsu", cx3)
 
     c2 = avg(images, AVG)
     #log(c2)
-    ret, c3 = otsu(c2)
+    if debug:
+        ret, c3 = otsu(c2)
     #log("OTSU thresh: "+str(ret))
     if meta.true("ocrComposite"):
         ocr = c2.copy()
@@ -118,10 +124,11 @@ def process(img, ids, corners):
         ocr = dst
 
     c2 = normalize(c2)
-    cv.imshow("composite", c2)
-    isave(c3,"composite-otsu")
-    isave(c2, "composite")
-    cv.imshow("composite otsu", c3)
+    if debug:
+        cv.imshow("composite", c2)
+        isave(c3,"composite-otsu")
+        isave(c2, "composite")
+        cv.imshow("composite otsu", c3)
     cnt = len(images)
     log("len "+str(cnt))
 
@@ -129,11 +136,12 @@ def process(img, ids, corners):
     ret, dst2 = otsu(dst)
     dst = normalize(dst)
 
-    cv.imshow("roi-thresh", dst2)
+    if debug:
+        cv.imshow("roi-thresh", dst2)
     isave(dst2, "roi-thresh")
 
-
-    cv.imshow("ROI", dst)
+    if debug:
+        cv.imshow("ROI", dst)
 
     isave(img, "detect-raw")
     if meta.true("drawROI"):
