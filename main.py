@@ -23,6 +23,7 @@ Correct = False # apply camera calibration
 Detect = True # detect and do stuff with aruco markers (the whole point here)
 VideoWrite = False # write out video
 #File = "video/vid20240302-155541-in.avi" # process this file if defined
+#File = "rtsp://192.168.1.221:8080/h264.sdp" # rtsp streams also work
 
 captureAPI = cv.CAP_ANY
 if meta.get("platform") == "win32":
@@ -99,8 +100,8 @@ cap.set(cv.CAP_PROP_EXPOSURE, -8)
 PROP = cv.CAP_PROP_EXPOSURE # range: -8 to -4 (for acceptable framerates
 #PROP = cv.CAP_PROP_BRIGHTNESS # only sw
 
-width = cap.get(cv.CAP_PROP_FRAME_WIDTH)
-height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
+width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
 log(f"Camera {Camera}: {width}x{height}")
 log(f"Backend: {cap.getBackendName()}")
 dbg("camera initialized")
@@ -170,9 +171,11 @@ while True:
             meta.toggle("stabilize")
         case 'x':
             meta.toggle("ocrComposite")
+        case 't':
+            meta.toggle("thresh")
         case 'r':
             meta.set("key", "r")
-        case 's':
+        case 'w':
             isave(frame, "frame",True)
             isave(out, "out", True)
         case ' ':
@@ -220,4 +223,3 @@ while True:
     #log(f'{1/(t2 - t1 + 0.0001):.0f}fps')
 
 cv.destroyAllWindows()
-log("total time: "+timey.fromstr())
