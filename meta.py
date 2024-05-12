@@ -2,6 +2,7 @@ import sys
 import socket
 import cv2 as cv
 from timestring import iso8601
+import logging
 
 # used like a singleton object
 
@@ -13,13 +14,16 @@ meta = dict(
     start = iso8601(),
     frame = 0,
     ft = [0.033],
-    drawAruco = False,
-    drawRejects = False,
+    drawAruco = True,
+    drawRejects = True,
     drawROI = True,
     histNormalize = False,
-    stabilize = False,
+    stabilize = True,
     ocr = True,
     ocrComposite = True,
+    thresh = False,
+    logLevel = logging.DEBUG,
+    invertDigits = True,
 )
 
 def get(name):
@@ -39,13 +43,13 @@ def setdict(dict):
         setkey(key, val)
 
 # you can't set a key to None. use setkey or unset for that
-def set(input, val=None):
-    if type(input) is dict:
+def set(name, val=None):
+    if type(name) is dict:
         if val is not None:
             raise Exception("dictionary with value")
-        setdict(input)
+        setdict(name)
     else:
-        setkey(input, val)
+        setkey(name, val)
 
 def unset(name):
     setkey(name, None)
