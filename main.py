@@ -203,6 +203,10 @@ while True:
 
     result = meta.get("result")
     if result is not None:
+        color=(0,255,0)
+        if "REJ" in result:
+            color=(0,0,255)
+            result=result.replace("REJ", "")
         point = meta.get("res_point")
         p2 = (point[0]+20, point[1]+40)
         # TODO: separate function
@@ -210,7 +214,7 @@ while True:
            p2,
            fontFace=cv.FONT_HERSHEY_DUPLEX,
            fontScale=1,
-           color=(0, 255, 0)
+           color=color
         )
     showfps(out)
     if VideoWrite:
