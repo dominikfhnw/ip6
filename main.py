@@ -5,12 +5,11 @@ import aruco
 import correct
 import calib
 import cv2 as cv
-from isave import isave
+from isave import isave, ishow
 import segments
 import meta
 import statistics
 from timestring import timestring
-import numpy as np
 
 SegDebug = True # debug segment part
 SegDebug = False
@@ -121,6 +120,7 @@ if VideoWrite:
 Exposure = -8
 log("init time: "+timey.fromstr())
 log("beginning main loop")
+gui = meta.get("gui")
 while True:
     t1 = timey.time()
     # Capture frame-by-frame
@@ -183,17 +183,17 @@ while True:
             isave(out, "out", True)
         case ' ':
             out = calib.process(frame.copy())
-            cv.imshow('out', out)
+            ishow('out', out)
             cv.waitKey(500)
 
     copy = frame.copy()
-    if Scale != 1:
+    if gui and Scale != 1:
         copy = cv.resize(copy, None, None, Scale, Scale, cv.INTER_NEAREST)
     out = copy.copy()
-    if Mirror:
+    if gui and Mirror:
         copy = cv.flip(copy, 1)
     showfps(copy)
-    cv.imshow('frame',  copy)
+    ishow('frame',  copy)
     #out = frame - np.min(frame)
     #out = (out * (256/np.max(out))).astype("uint8")
     if Correct:
@@ -215,9 +215,9 @@ while True:
     showfps(out)
     if VideoWrite:
             vout2.write(out)
-    cv.imshow('out', out)
+    ishow('out', out)
 
-    if closed("frame") or closed("out"):
+    if gui and (closed("frame") or closed("out")):
         break
 
     meta.inc("frame")
