@@ -19,9 +19,10 @@ def isave(img, name="out", force=False):
         logger.fatal("Error writing file "+filename)
         exit()
 
-def ishow(name, img):
-    if meta.true('save'):
+def ishow(name, img, save:bool=False):
+    if save and meta.true('save'):
         isave(img, name, force=True)
 
-    cv.imshow(name, img)
+    if meta.true('gui'):
+        cv.imshow(name, img)
 
