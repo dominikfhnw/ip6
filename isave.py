@@ -9,7 +9,8 @@ log, dbg, logger = log.auto(__name__)
 def isave(img, name="out", force=False):
     if not force and not Enabled:
         return
-    filename = "out/"+name+timestring()+".jpg"
+    fname = name.replace(" ", "_")
+    filename = "out/"+fname+timestring()+".jpg"
     if cv.imwrite(filename, img):
         log("Written "+filename)
     else:
