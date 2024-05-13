@@ -25,13 +25,14 @@ meta = dict(
     logLevel = logging.DEBUG,
     invertDigits = True,
     extractDebug = False,
+    height = 100,
 )
 
 def get(name):
-    return meta[name]
+    return meta.get(name, None)
 
 def true(name):
-    return bool(meta[name])
+    return bool(meta.get(name, False))
 
 # assumes boolean True if no value was given
 def setkey(name, val=True):
@@ -39,7 +40,6 @@ def setkey(name, val=True):
     meta[name] = val
 
 def setdict(dict):
-    global meta
     for key, val in dict.items():
         setkey(key, val)
 
@@ -49,6 +49,8 @@ def set(name, val=None):
         if val is not None:
             raise Exception("dictionary with value")
         setdict(name)
+    elif val is None:
+        setkey(name, True)
     else:
         setkey(name, val)
 
@@ -62,4 +64,10 @@ def toggle(name):
 
 def inc(name):
     global meta
-    meta[name] += 1
+    meta[name] = meta.get(name, 0) + 1
+
+def append(name, val):
+    global meta
+    if not name in meta:
+        meta[name] = []
+    meta[name].append(val)
