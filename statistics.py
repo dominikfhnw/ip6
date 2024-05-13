@@ -10,6 +10,7 @@ def process():
     log("nothing much to do")
 
 def stats(name, mat):
+    if mat is None: return
     min = np.min(mat)
     max = np.max(mat)
     mean = np.mean(mat)
@@ -31,7 +32,7 @@ def show(name):
     stats(name+' err', escores)
 
     #logger.warn(f"mscores {mscores}")
-    logger.warn(f"escores {escores}")
+    #logger.warn(f"escores {escores}")
 
 
 def _end():
@@ -41,10 +42,9 @@ def _end():
 
     logger.warn('')
     logger.warn(f"{frames=} {one=} {both=}")
-    logger.warn('')
-    show("std")
-    logger.warn('')
-    show("gauss")
+    for name in sorted(set(meta.get('ocr_methods'))):
+        logger.warn('')
+        show(name)
     logger.warn('')
 
 atexit.register(_end)

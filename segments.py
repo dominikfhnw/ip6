@@ -54,6 +54,7 @@ def process(img, height):
     #guiocr(gauss2, thresh_norm, "ocr3b", factor=3)
 
 def guiocr(img, threshold=0.5, name="ocr", factor:int=1, binary=False):
+    meta.append("ocr_methods", name)
     # TODO: get via meta? or as param from lower layer
     xoffset, xmax, xstep = 12, 250, 46
 
