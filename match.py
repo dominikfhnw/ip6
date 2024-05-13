@@ -1,36 +1,75 @@
 import log
 import meta
 import numpy as np
+from imagefunctions import p
 
-log, dbg, logger = log.auto(__name__)
+log, dbg, logger, isdbg = log.auto2(__name__)
 
-def process(mat, threshold):
+def process(mat, threshold, binary=False, name=None):
     dbg("started match")
 
-    digits = []
+    digits1 = []
     digits2 = []
 
+    str1, str2 = '', ''
+    err1, err2 = 0,0
     for i, digit in enumerate(mat):
         dbg(f"NUM: {i}")
-        result, confidence = thresh_match(digit)
-        result2, confidence2, rmsd = mse_match(digit)
+        result1, err  = thresh_match(digit, threshold, binary=binary)
+        result2, rmsd = mse_match(digit, binary=binary)
 
-        digits.append(result)
-        digits2.append((result2,confidence2))
+        str2 += f"[{result2}] {p(rmsd)} {rmsd:.3f} "
+        str1 += f"[{result1}] {p(err)} {err:.3f} "
+        digits1.append((result1, err))
+        digits2.append((result2,rmsd))
+        err1 += err**2
+        err2 += rmsd**2
+        dbg(f"ERRADD {err1=} {err2=}")
 
-    out = ''.join(digits)
+    err1 = np.sqrt(err1/len(mat))
+    err2 = np.sqrt(err2/len(mat))
+
+    str1 += f"SCORE {p(err1)} {err1} "
+    str2 += f"SCORE {p(err2)} {err2} "
+
+    out1 = ''.join([t[0] for t in digits1])
     out2 = ''.join([t[0] for t in digits2])
 
-    meta.set("result", out)
-    log(f"Number: {out}")
-    log(f"Number2: {out2}")
+    stat = "stat_" + name
+    if out2 == "314159":
+        meta.inc(f"{stat}match")
+        meta.append(stat+"mscores", p(err2))
+    else:
+        log(f"Err: {str2}")
+        meta.inc(f"{stat}err")
+        meta.append(stat+"escores", p(err2))
+
+
+    meta.set("result", out2)
+
+    dbg(f"Number1: {str1}")
+    dbg(f"Number2: {str2}")
+
+    dbg(f"Number: {out2} {out1}")
+    #log(f"Number rmsd: {out2}")
     return digits2
 
+
 # normalize to range [0,1]
-def normalize_matrix(matrix):
-    min = np.min(matrix)
-    matrix = matrix - min
-    max = np.max(matrix)
+def normalize_matrix(matrix, binary=False):
+    first = matrix.flat[0]
+    # short circuit on one value matrix
+    if np.all(matrix==first):
+        return None
+
+    max = 0
+    if binary:
+        max = meta.get('maxrect')
+    else:
+        min = np.min(matrix)
+        matrix = matrix - min
+        max = np.max(matrix)
+
     matrix = matrix / max
 
     if meta.get("invertDigits"): # invert
@@ -64,50 +103,59 @@ def digits(font=0):
     return digits
 
 
-def p(float):
-    #return f"{100*(1-float):3.0f}"
-    if float != float:
-        log("GOT UNEXPECTED NaN")
-        return 999
-    return int(100*(1-float))
 
-def mse_match(digit, threshold=0.5, font=0):
+def mse_match(digit, threshold=0.5, font=0, binary=False):
     assert threshold == 0.5 # other values later
-    digit = normalize_matrix(digit)
+    if isdbg: dbg(f"IN1: {digit}")
+
+    digit = normalize_matrix(digit, binary)
+    if digit is None:
+        return '#', 1
 
     result = '#'
-    #dbg(f"IN: {digit}")
+    #if isdbg: dbg(f"IN: {digit}")
 
-    minerr = 100
+    minmsd = 100
+    minrmsd = 100
 
     for j, ref in enumerate(digits(font)):
         #dbg(f"DIG: {ref}")
 
         dev = (digit-ref)**2
-        dev2 = np.sum(dev)
-        #dev3 = np.sqrt(dev2)
-        #dev4 = np.sum(np.sqrt(dev))
-        rmsd = np.sqrt(dev2/7)
+        sum = np.sum(dev)
+        msd = sum/7
+        rmsd = np.sqrt(msd)
+
         #score = f"{100*(1-rmsd):3.0f}"
         #dbg(f"CAND: {j} {p(dev2)} {dev2:.3f} {dev5:.3f}, {p(dev3)} {p(dev4)}")
-        dbg(f"CAND: {j} {p(dev2/7)} {dev2:.2f} {rmsd:.2f} {p(rmsd)}")
-        if rmsd < minerr:
-            minerr = rmsd
+        #if isdbg: dbg(f"CAND: {j} {p(dev2/7)} {dev2:.2f} {rmsd:.2f} {p(rmsd)}")
+        if rmsd < minrmsd:
+            minrmsd = rmsd
+            minmsd = msd
             result = str(j)
         #dbg(f"ERR {j} {dev2:.3f} {dev}")
 
     #confidence = 1 - (minerr / 7)
-    dbg(f"MSE:  {result} {p(minerr)} {minerr:.3f}")
-    return (result, p(minerr), minerr)
 
-def thresh_match(digit, threshold=0.5, font=0):
-    digit = normalize_matrix(digit)
+    if isdbg: dbg(f"RMSD:   {result} {p(minrmsd)} {minrmsd:.3f}")
+    return (result, minrmsd)
+
+def thresh_match(digit, threshold=0.5, font=0, binary=False):
+    digit = normalize_matrix(digit, binary)
+    if digit is None:
+        return '#', 1
+
+    orig = digit
     digit = threshold_matrix(digit, threshold)
 
     result = '#'
-    confidence = 0
+    diff = np.ones_like(digit)
     for j, ref in enumerate(digits(font)):
         if np.array_equal(ref, digit):
-             result=str(j)
-    dbg(f"THRESH: {result} ({100*confidence}%) {digit}")
+            result=str(j)
+            diff = abs(orig - ref)
+            break
+
+    confidence = np.sum(diff)/7
+    if isdbg: dbg(f"THRESH: {result} {p(confidence)} {confidence:.3f}")
     return (result, confidence)
