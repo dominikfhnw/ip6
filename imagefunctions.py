@@ -91,8 +91,8 @@ def otsu_linearize(img):
         (255+(img - thresh) * scale)/2
     ).astype(np.uint8)
 
-def adaptivethresh(img):
-    return cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
+def adaptivethresh(img, blockSize = 39, C = 4):
+    return cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, blockSize, C)
 
 def p(float):
     #return f"{100*(1-float):3.0f}"
