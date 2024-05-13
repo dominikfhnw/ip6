@@ -10,7 +10,9 @@ import meta
 log, dbg, logger, isdbg = log.auto2(__name__)
 
 LENGTH_REL = 3
-HEIGHT = meta.get("height")
+PRESCALE = 1
+ORIGHEIGHT = meta.get("height")
+HEIGHT = int(ORIGHEIGHT/PRESCALE)
 AVG = 10
 INTERPOLATION = cv.INTER_LINEAR
 
@@ -156,5 +158,7 @@ def process(img, ids, corners):
         isave(img, "detect-marked")
 
     if meta.true("ocr"):
-        segments.process(ocr, HEIGHT)
+        if PRESCALE != 1:
+            ocr = cv.resize(ocr, None, None, PRESCALE, PRESCALE, cv.INTER_LINEAR)
+        segments.process(ocr, ORIGHEIGHT)
     return img
