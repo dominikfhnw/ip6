@@ -1,7 +1,7 @@
 import numpy as np
 import cv2 as cv
 
-__all__ = ['histstretch', 'avg', 'phaseCorrelate', 'warpAffine', 'translationMatrix', 'stabilize', 'otsu', 'adaptivethresh', 'otsu_linearize']
+__all__ = ['histstretch', 'avg', 'phaseCorrelate', 'warpAffine', 'translationMatrix', 'stabilize', 'otsu', 'adaptivethresh', 'otsu_linearize', 'p']
 
 OTSU_SCALE = 1
 
@@ -80,8 +80,18 @@ def otsu_linearize(img):
     thresh, _ = otsu(img)
     norm = 2*thresh/255
     scale = 255/(255-thresh)
-    return np.where(img < thresh, img / norm, (255+(img - thresh) * scale)/2).astype(np.uint8)
+    return np.where(
+        img < thresh,
+        img / norm,
+        (255+(img - thresh) * scale)/2
+    ).astype(np.uint8)
 
 def adaptivethresh(img):
     return cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
 
+def p(float):
+    #return f"{100*(1-float):3.0f}"
+    if float != float:
+        raise Exception("GOT UNEXPECTED NaN")
+        return 999
+    return int(100*(1-float))
