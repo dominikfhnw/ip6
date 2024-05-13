@@ -8,7 +8,7 @@ log, dbg, logger = log.auto(__name__)
 DICT = cv.aruco.DICT_4X4_50
 PERIMETER = 0.01
 # detect a bit smaller tags
-REFINE = cv.aruco.CORNER_REFINE_SUBPIX
+REFINE = cv.aruco.CORNER_REFINE_CONTOUR
 # NONE is a bit jumpy, APRILTAG is slow. CONTOUR only works well sometimes
 # SUBPIX seems to be the best
 # if cpu is an issue you can maybe choose between SUBPIX here or disable picture averaging in the
