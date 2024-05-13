@@ -19,41 +19,54 @@ def process(img, height):
 
     img = histstretch( img )
     thresh, ots = otsu(img)
-    thresh_norm = thresh/255
+    #thresh_norm = thresh/255
     #log(f"THRESHOLD: {thresh}")
 
     lin = otsu_linearize(img)
 
-    #_, t0 = cv.threshold(img,127,1000,cv.THRESH_BINARY)
-    #_, t1 = cv.threshold(lin,127,1000,cv.THRESH_BINARY)
-    #t2, _ = otsu(lin)
-    #dbg(f"T2: {t2}")
-    #cv.imshow("otsu", ots)
-    #cv.imshow("lin", lin)
-    #cv.imshow("linot", t1)
-    #cv.imshow("thr50", t0)
+    gauss = adaptivethresh(img)
+    #gauss1 = adaptivethresh(img, blockSize=129, C=9)
+    #blur = cv.stackBlur(lin, (11,11))
+# BETTER THAN std    gauss2 = adaptivethresh(lin, blockSize=129, C=12)
 
-    #gauss = adaptivethresh(img)
-    gauss = adaptivethresh(lin)
+    gauss2 = adaptivethresh(img, blockSize=129, C=12)
+    #gauss3 = adaptivethresh(img, blockSize=129, C=12)
+
+    #gauss3 = adaptivethresh(img, blockSize=99, C=12)
     #gauss2 = adaptivethresh(img)
-
+    #gauss2 = cv.adaptiveThreshold(lin, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 59, 4)
     #_, img = cv.threshold(img,thresh-20,1000,cv.THRESH_BINARY)
     #gauss2 = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 13, 4)
 
     # if meta.true("thresh"):
     #     gauss = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
     #     img = gauss
+    #guiocr(gauss, 0.5, "gauss0")
+    #guiocr(gauss1, 0.5, "gauss0b")
 
-    #guiocr(img, thresh_norm, "ocr norm")
-    guiocr(lin, 0.5, "std")
+    #guiocr(img, thresh, "nonlin")
+    guiocr(img, 0.5, "nonlin", binary=True)
+    guiocr(ots, 0.5, "otsu", binary=True)
+    #guiocr(ots, 0.5, "otsu2", binary=False)
+    #guiocr(img, 0.5, "nonlin", binary=True)
+
+    guiocr(lin, 0.5, "std", binary=True, cutoff=0) #60
+    #guiocr(img, 0.5, "std3", binary=True)
+    #guiocr(img, 0.5, "std4", binary=False)
     guiocr(gauss, 0.5, "gauss", binary=True)
+    guiocr(gauss2, 0.5, "gauss2", binary=True, cutoff=0) #80
+    #guiocr(gauss3, 0.5, "gauss nocut", binary=True, cutoff=0)
+
+    #guiocr(gauss2, 0.5, "gauss2b", binary=False)
+
+    ishow("input", img, save=True)
     #guiocr(gauss, 0.5, "ocr gauss lin2", binary=False)
     #guiocr(gauss2, thresh_norm, "ocr gauss", binary=True)
 
     #guiocr(gauss, thresh_norm, "ocr3", factor=3)
     #guiocr(gauss2, thresh_norm, "ocr3b", factor=3)
 
-def guiocr(img, threshold=0.5, name="ocr", factor:int=1, binary=False):
+def guiocr(img, threshold=0.5, name="ocr", factor:int=1, binary=False, cutoff=0):
     meta.append("ocr_methods", name)
     # TODO: get via meta? or as param from lower layer
     xoffset, xmax, xstep = 12, 250, 46
@@ -68,7 +81,7 @@ def guiocr(img, threshold=0.5, name="ocr", factor:int=1, binary=False):
     dbg(f"OCR MATCH {name}")
     gui = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
     mat = extractdigits(img, gui, xoffset, xmax, xstep)
-    digits = match.process(mat, threshold, binary=binary, name=name)
+    digits = match.process(mat, threshold, binary=binary, name=name, cutoff=cutoff)
     if factor != 1:
         FACTOR = int(FACTOR*factor)
         #img = cv.resize(img, None, None, factor, factor, cv.INTER_CUBIC)
@@ -79,7 +92,7 @@ def guiocr(img, threshold=0.5, name="ocr", factor:int=1, binary=False):
         text(gui, n, xoffset+i*xstep, 95)
         text(gui, str(p(conf)), xoffset+i*xstep+15, 95, (0,0,255))
 
-    ishow(name, gui)
+    ishow(name, gui, save=True)
 
 def text(gui, text, x, y, color=(255,0,0)):
     cv.putText(gui, text,
