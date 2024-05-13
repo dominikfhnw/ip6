@@ -21,12 +21,14 @@ meta = dict(
     histNormalize = False,
     stabilize = False,
     ocr = True,
-    ocrComposite = True,
+    ocrComposite = False,
+    average = 10,
     thresh = False,
-    logLevel = logging.DEBUG,
+    logLevel = logging.INFO,
     invertDigits = True,
     extractDebug = False,
     height = 100,
+    gui = True,
 )
 
 def get(name):
