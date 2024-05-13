@@ -5,7 +5,7 @@ from imagefunctions import p
 
 log, dbg, logger, isdbg = log.auto2(__name__)
 
-def process(mat, threshold, binary=False, name=None):
+def process(mat, threshold, binary=False, name=None, cutoff=0):
     dbg("started match")
 
     digits1 = []
@@ -35,19 +35,34 @@ def process(mat, threshold, binary=False, name=None):
     out1 = ''.join([t[0] for t in digits1])
     out2 = ''.join([t[0] for t in digits2])
 
+    frame = meta.get('frame')
     stat = "stat_" + name
-    if out2 == "314159":
-        meta.inc(f"{stat}match")
-        meta.append(stat+"mscores", p(err2))
+
+    if out1 == "314159":
+        meta.inc(f"{stat}tmatch")
+    elif '#' in out1:
+        meta.inc(f"{stat}trej")
     else:
-        #meta.set("save")
-        frame = meta.get('frame')
-        log(f"Err {name} {frame=}: {str2}")
-        meta.inc(f"{stat}err")
-        meta.append(stat+"escores", p(err2))
+        log(f"Err thresh {name} {frame=}: {str1}")
+        meta.inc(f"{stat}terr")
 
 
-    meta.set("result", out2)
+    if p(err2) > cutoff:
+        meta.set("result", out2)
+        if out2 == "314159":
+            meta.inc(f"{stat}match")
+            meta.append(stat+"mscores", p(err2))
+        else:
+            #meta.set("save")
+            log(f"Err {name} {frame=}: {str2}")
+            meta.inc(f"{stat}err")
+            meta.append(stat+"escores", p(err2))
+    else:
+        meta.inc(f"{stat}rej")
+        #log(f"Rej {name} {frame=}: {str2}")
+        meta.set("result", "REJ"+out2)
+
+
 
     dbg(f"Number1: {str1}")
     dbg(f"Number2: {str2}")
