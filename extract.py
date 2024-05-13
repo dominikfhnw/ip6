@@ -10,7 +10,7 @@ import meta
 log, dbg, logger, isdbg = log.auto2(__name__)
 
 LENGTH_REL = 3
-HEIGHT = 300
+HEIGHT = meta.get("height")
 AVG = 10
 INTERPOLATION = cv.INTER_LINEAR
 
@@ -49,10 +49,14 @@ def process(img, ids, corners):
             right = num
             dbg("found right:"+str(num))
 
+    if left is not None or right is not None:
+        meta.inc("stat_onemarker")
+
     if left is None or right is None:
         return img
 
     dbg("found both")
+    meta.inc("stat_bothmarker")
     l = corners[left]
     r = corners[right]
 
@@ -130,7 +134,7 @@ def process(img, ids, corners):
         isave(c2, "composite")
         cv.imshow("composite otsu", c3)
     cnt = len(images)
-    log("len "+str(cnt))
+    dbg("len "+str(cnt))
 
     isave(dst, "roi-gray")
     ret, dst2 = otsu(dst)
