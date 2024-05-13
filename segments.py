@@ -55,6 +55,7 @@ def process(img, height):
     #guiocr(img, 0.5, "std4", binary=False)
     guiocr(gauss, 0.5, "gauss", binary=True)
     guiocr(gauss2, 0.5, "gauss2", binary=True, cutoff=0) #80
+    guiocr(gauss2, 0.5, "gauss2 cutoff", binary=True, cutoff=80) #80
     #guiocr(gauss3, 0.5, "gauss nocut", binary=True, cutoff=0)
 
     #guiocr(gauss2, 0.5, "gauss2b", binary=False)
