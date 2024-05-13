@@ -18,8 +18,8 @@ def process(mat, threshold, binary=False, name=None):
         result1, err  = thresh_match(digit, threshold, binary=binary)
         result2, rmsd = mse_match(digit, binary=binary)
 
-        str2 += f"[{result2}] {p(rmsd)} {rmsd:.3f} "
-        str1 += f"[{result1}] {p(err)} {err:.3f} "
+        str2 += f"[{result2}] {p(rmsd)} "
+        str1 += f"[{result1}] {p(err)} "
         digits1.append((result1, err))
         digits2.append((result2,rmsd))
         err1 += err**2
@@ -29,8 +29,8 @@ def process(mat, threshold, binary=False, name=None):
     err1 = np.sqrt(err1/len(mat))
     err2 = np.sqrt(err2/len(mat))
 
-    str1 += f"SCORE {p(err1)} {err1} "
-    str2 += f"SCORE {p(err2)} {err2} "
+    str1 += f"SCORE {p(err1)} {err1:.3f} "
+    str2 += f"SCORE {p(err2)} {err2:.3f} "
 
     out1 = ''.join([t[0] for t in digits1])
     out2 = ''.join([t[0] for t in digits2])
@@ -40,7 +40,9 @@ def process(mat, threshold, binary=False, name=None):
         meta.inc(f"{stat}match")
         meta.append(stat+"mscores", p(err2))
     else:
-        log(f"Err: {str2}")
+        #meta.set("save")
+        frame = meta.get('frame')
+        log(f"Err {name} {frame=}: {str2}")
         meta.inc(f"{stat}err")
         meta.append(stat+"escores", p(err2))
 
