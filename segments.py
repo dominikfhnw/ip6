@@ -1,6 +1,10 @@
 import log
-from imagefunctions import *
+import cv2 as cv
+import numpy as np
+from imagefunctions import otsu, histstretch, otsu_linearize, adaptivethresh, p
 import match
+from isave import ishow
+import meta
 
 log, dbg, logger = log.auto(__name__)
 
@@ -16,22 +20,40 @@ def process(img, height):
     img = histstretch( img )
     thresh, ots = otsu(img)
     thresh_norm = thresh/255
-    log(f"THRESHOLD: {thresh}")
+    #log(f"THRESHOLD: {thresh}")
+
+    lin = otsu_linearize(img)
+
+    #_, t0 = cv.threshold(img,127,1000,cv.THRESH_BINARY)
+    #_, t1 = cv.threshold(lin,127,1000,cv.THRESH_BINARY)
+    #t2, _ = otsu(lin)
+    #dbg(f"T2: {t2}")
+    #cv.imshow("otsu", ots)
+    #cv.imshow("lin", lin)
+    #cv.imshow("linot", t1)
+    #cv.imshow("thr50", t0)
+
+    #gauss = adaptivethresh(img)
+    gauss = adaptivethresh(lin)
+    #gauss2 = adaptivethresh(img)
+
     #_, img = cv.threshold(img,thresh-20,1000,cv.THRESH_BINARY)
-    gauss = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
     #gauss2 = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 13, 4)
 
     # if meta.true("thresh"):
     #     gauss = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 39, 4)
     #     img = gauss
 
-    guiocr(img, thresh_norm)
-    guiocr(gauss, thresh_norm, "ocr2")
-    #guiocr(gauss2, thresh_norm, "ocr2b")
+    #guiocr(img, thresh_norm, "ocr norm")
+    guiocr(lin, 0.5, "std")
+    guiocr(gauss, 0.5, "gauss", binary=True)
+    #guiocr(gauss, 0.5, "ocr gauss lin2", binary=False)
+    #guiocr(gauss2, thresh_norm, "ocr gauss", binary=True)
+
     #guiocr(gauss, thresh_norm, "ocr3", factor=3)
     #guiocr(gauss2, thresh_norm, "ocr3b", factor=3)
 
-def guiocr(img, threshold=0.5, name="ocr", factor:int=1):
+def guiocr(img, threshold=0.5, name="ocr", factor:int=1, binary=False):
     # TODO: get via meta? or as param from lower layer
     xoffset, xmax, xstep = 12, 250, 46
 
@@ -42,9 +64,10 @@ def guiocr(img, threshold=0.5, name="ocr", factor:int=1):
         dbg(f"factor after: {FACTOR}")
         img = cv.resize(img, None, None, 1/factor, 1/factor, cv.INTER_CUBIC)
 
+    dbg(f"OCR MATCH {name}")
     gui = cv.cvtColor(img, cv.COLOR_GRAY2BGR)
     mat = extractdigits(img, gui, xoffset, xmax, xstep)
-    digits = match.process(mat, threshold)
+    digits = match.process(mat, threshold, binary=binary, name=name)
     if factor != 1:
         FACTOR = int(FACTOR*factor)
         #img = cv.resize(img, None, None, factor, factor, cv.INTER_CUBIC)
@@ -53,9 +76,9 @@ def guiocr(img, threshold=0.5, name="ocr", factor:int=1):
     for i, tuple in enumerate(digits):
         n, conf = tuple
         text(gui, n, xoffset+i*xstep, 95)
-        text(gui, str(conf), xoffset+i*xstep+15, 95, (0,0,255))
+        text(gui, str(p(conf)), xoffset+i*xstep+15, 95, (0,0,255))
 
-    cv.imshow(name, gui)
+    ishow(name, gui)
 
 def text(gui, text, x, y, color=(255,0,0)):
     cv.putText(gui, text,
@@ -71,7 +94,8 @@ def extractdigits(img, gui, xoffset, xmax, xstep):
     l = np.empty((6,7))
 
     for i in range(xoffset, xmax, xstep):
-        x = extractdigit(img, gui, i)
+        # TODO: use b
+        x, b = extractdigit(img, gui, i)
         l[start] = x
         start += 1
 
@@ -98,18 +122,28 @@ def extractdigit(img, gui, x):
     y=11
     s = dict()
 
-    s["a"] = rec(img,gui,x+8,y+2,20,5)
-    s["g"] = rec(img,gui,x+8,y+33,20,5)
-    s["d"] = rec(img,gui,x+8,y+64,20,5)
+    # TODO: should be somewhere better
+    maxint = np.iinfo(img.dtype).max
+    w, h = 20, 5
+    maxrect = (w*h) * FACTOR**2 * maxint
+    meta.set("maxrect", maxrect)
+    #dbg(f"MAX {maxrect}")
+    s["a"] = rec(img, gui, x + 8, y + 2, w, h)
+    s["g"] = rec(img, gui, x + 8, y + 33, w, h)
+    s["d"] = rec(img, gui, x + 8, y + 64, w, h)
 
-    s["f"] = rec(img,gui,x+2,y+10,5,20)
-    s["b"] = rec(img,gui,x+29,y+10,5,20)
-    s["e"] = rec(img,gui,x+2,y+41,5,20)
-    s["c"] = rec(img,gui,x+29,y+41,5,20)
+    s["f"] = rec(img, gui, x + 2, y + 10, h, w)
+    s["b"] = rec(img, gui, x + 29, y + 10, h, w)
+    s["e"] = rec(img, gui, x + 2, y + 41, h, w)
+    s["c"] = rec(img, gui, x + 29, y + 41, h, w)
+
+    b1 = rec(img, gui, x+11, y+13,14,14,(0,127,0))
+    b2 = rec(img, gui, x+11, y+44,14,14,(0,127,0))
+    b = (b1 + b2)/3.92
 
     t = np.array([s["a"], s["b"], s["c"], s["d"], s["e"], s["f"], s["g"]])
 
-    return t
+    return t, b
 
 def seg():
     file = "roi-thresh20240229-220608.jpg"
@@ -128,9 +162,14 @@ def seg():
     file="out/roi-gray20240301-143853.jpg"
     file="needs-local-thresh.png"
     #file = "out/composite20240301-160253.jpg" # known good
+    #file="black.png"
 
     input = cv.imread(""+file)
-    cv.imshow("seg", input)
+
+    #input = cv.resize(input, None, None, 3, 3, cv.INTER_NEAREST_EXACT)
+    gui = input.copy()
+
+    cv.imshow("seg", gui)
     input = cv.cvtColor(input, cv.COLOR_BGR2GRAY)
     #input = histstretch( input )
     #input = cv.resize(input, None, None, 3, 3, cv.INTER_NEAREST)
@@ -142,7 +181,7 @@ def seg():
         log(str(img.shape[0]))
         process(img, img.shape[0])
         #dbg(f'MIN {min} MAX {max}')
-        cv.imshow("seg", img)
+        #cv.imshow("seg", img)
         cv.waitKey(0)
         exit()
 
