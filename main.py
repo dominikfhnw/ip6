@@ -5,10 +5,10 @@ import aruco
 import correct
 import calib
 import cv2 as cv
-import pprint
 from isave import isave
 import segments
 import meta
+import statistics
 from timestring import timestring
 import numpy as np
 
@@ -106,10 +106,10 @@ log(f"Camera {Camera}: {width}x{height}")
 log(f"Backend: {cap.getBackendName()}")
 dbg("camera initialized")
 meta.set(dict(
-    backend = cap.getBackendName(),
+    camerabackend = cap.getBackendName(),
     camera = Camera,
-    width = int(width),
-    height = int(height),
+    camerawidth = int(width),
+    cameraheight = int(height),
 ))
 
 #res(352,288)
@@ -133,6 +133,7 @@ while True:
         vout1.write(frame)
     #log("FOCUS "+str(cap.get(cv.CAP_PROP_FOCUS)))
     meta.unset("key")
+    meta.unset("save")
     meta.unset("result")
 
     match chr(cv.pollKey() & 0xFF).lower():
@@ -176,6 +177,8 @@ while True:
         case 'r':
             meta.set("key", "r")
         case 'w':
+            meta.set("save")
+            log("save requested")
             isave(frame, "frame",True)
             isave(out, "out", True)
         case ' ':
