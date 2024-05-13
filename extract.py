@@ -13,7 +13,7 @@ LENGTH_REL = 3
 PRESCALE = 1
 ORIGHEIGHT = meta.get("height")
 HEIGHT = int(ORIGHEIGHT/PRESCALE)
-AVG = 10
+AVG = meta.get("average")
 INTERPOLATION = cv.INTER_LINEAR
 
 
