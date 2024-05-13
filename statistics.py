@@ -21,13 +21,19 @@ def stats(name, mat):
 
 def show(name):
     stat = 'stat_'+name
+
     match = meta.get(stat+'match')
+    rej = meta.get(stat+'rej')
     err = meta.get(stat+'err')
+
+    tmatch = meta.get(stat+'tmatch')
+    trej = meta.get(stat+'trej')
+    terr = meta.get(stat+'terr')
 
     mscores = meta.get(stat+'mscores')
     escores = meta.get(stat+'escores')
 
-    logger.warn(f"{name}: {match=} {err=}")
+    logger.warn(f"{name}: {match=} {err=} {rej=}    {tmatch=} {terr=} {trej=}")
     stats(name+' match', mscores)
     stats(name+' err', escores)
 
