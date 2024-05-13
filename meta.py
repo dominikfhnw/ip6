@@ -1,7 +1,7 @@
 import sys
 import socket
 import cv2 as cv
-from timestring import iso8601
+from timestring import iso8601, timestring
 import logging
 
 # used like a singleton object
@@ -12,6 +12,7 @@ meta = dict(
     host = socket.gethostname(),
     platform = sys.platform,
     start = iso8601(),
+    start_timestr = timestring(),
     frame = 0,
     ft = [0.033],
     drawAruco = True,

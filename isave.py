@@ -1,5 +1,4 @@
 import cv2 as cv
-from timestring import timestring
 import log
 import meta
 
@@ -10,7 +9,10 @@ def isave(img, name="out", force=False):
     if not force and not Enabled:
         return
     fname = name.replace(" ", "_")
-    filename = "out/"+fname+timestring()+".jpg"
+    frame = meta.get('frame')
+    start = meta.get('start_timestr')
+    var = f"{start}-{frame}"
+    filename = "out/"+fname+var+".jpg"
     if cv.imwrite(filename, img):
         log("Written "+filename)
     else:
