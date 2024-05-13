@@ -15,6 +15,11 @@ def histstretch(img):
 def avg(image, count):
     assert len(image) < 2**(32-8)
     composite = np.zeros(shape=image[-1].shape, dtype=np.uint32)
+    count2 = len(image)
+    if count2 > count:
+        image = image[-count:]
+    elif count2 < count:
+        count = count2
     last = image[-count:]
     for i in last:
         composite += i
