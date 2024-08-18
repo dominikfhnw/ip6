@@ -24,6 +24,7 @@ def process(img):
 
     corners, ids, rejectedImgPoints = det.detectMarkers(img)
     if ids is not None:
+        pass
         img = extract.process(img, ids, corners)
     if meta.true("drawAruco"):
         img = cv.aruco.drawDetectedMarkers(img, corners, ids)

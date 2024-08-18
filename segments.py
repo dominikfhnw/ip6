@@ -29,7 +29,11 @@ def process(img, height):
     #blur = cv.stackBlur(lin, (11,11))
 # BETTER THAN std    gauss2 = adaptivethresh(lin, blockSize=129, C=12)
 
+
+    #mean = cv.adaptiveThreshold(img, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, 39, 12)
+
     gauss2 = adaptivethresh(img, blockSize=129, C=12)
+    gauss3 = adaptivethresh(lin, blockSize=129, C=12)
     #gauss3 = adaptivethresh(img, blockSize=129, C=12)
 
     #gauss3 = adaptivethresh(img, blockSize=99, C=12)
@@ -45,18 +49,28 @@ def process(img, height):
     #guiocr(gauss1, 0.5, "gauss0b")
 
     #guiocr(img, thresh, "nonlin")
-    guiocr(img, 0.5, "nonlin", binary=True)
+    _, thresh50 = cv.threshold(img,127,255,cv.THRESH_BINARY)
+    guiocr(img, 0.5, "raw", binary=True)
+    #guiocr(thresh50, 0.5, "raw thresh", binary=True)
     guiocr(ots, 0.5, "otsu", binary=True)
     #guiocr(ots, 0.5, "otsu2", binary=False)
     #guiocr(img, 0.5, "nonlin", binary=True)
 
-    guiocr(lin, 0.5, "std", binary=True, cutoff=0) #60
+
     #guiocr(img, 0.5, "std3", binary=True)
     #guiocr(img, 0.5, "std4", binary=False)
-    guiocr(gauss, 0.5, "gauss", binary=True)
+    guiocr(gauss, 0.5, "gauss1", binary=True)
     guiocr(gauss2, 0.5, "gauss2", binary=True, cutoff=0) #80
-    guiocr(gauss2, 0.5, "gauss2 cutoff", binary=True, cutoff=80) #80
-    #guiocr(gauss3, 0.5, "gauss nocut", binary=True, cutoff=0)
+    guiocr(gauss3, 0.5, "gauss3", binary=True, cutoff=0) #80
+
+    #guiocr(mean, 0.5, "mean - other adapt thresh", binary=True)
+    guiocr(lin, 0.5, "std", binary=True, cutoff=0) #60
+    #guiocr(gauss2, 0.5, "gauss2 cutoff", binary=True, cutoff=80) #80
+#guiocr(gauss3, 0.5, "gauss nocut", binary=True, cutoff=0)
+
+    #guiocr(ots, 0.5, "otsu cutoff", binary=True, cutoff=70)
+    #guiocr(lin, 0.5, "std cutoff", binary=True, cutoff=65) #60
+
 
     #guiocr(gauss2, 0.5, "gauss2b", binary=False)
 
@@ -170,12 +184,12 @@ def seg():
     #file = "out/composite20240301-160253.jpg" # known good
     #file="out/roi-gray20240302-212209.jpg"
     #file="needs-local-thresh.png"
-    #file="smeared.png"
-    file="aruco-webcam.png"
-    file="out/roi-gray20240229-191400.jpg"
-    file="out/detect-roi20240229-150920.jpg"
-    file="out/roi-gray20240301-143853.jpg"
-    file="needs-local-thresh.png"
+    file="smeared.png"
+    #file="aruco-webcam2.png"
+    #file="out/roi-gray20240229-191400.jpg"
+    #file="out/detect-roi20240229-150920.jpg"
+    #file="out/roi-gray20240301-143853.jpg"
+    #file="needs-local-thresh.png"
     #file = "out/composite20240301-160253.jpg" # known good
     #file="black.png"
 

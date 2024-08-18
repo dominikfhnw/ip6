@@ -11,8 +11,7 @@ import meta
 import statistics
 from timestring import timestring
 
-SegDebug = True # debug segment part
-SegDebug = False
+SegDebug = False # debug segment part
 Scale = 1 # global scale for small videos
 
 Camera = 0 # which camera to use
@@ -22,7 +21,25 @@ Correct = False # apply camera calibration
 Detect = True # detect and do stuff with aruco markers (the whole point here)
 VideoWrite = False # write out video
 #File = "video/vid20240302-155541-in.avi" # process this file if defined
+#File = "video/perf/vid20240303-005048-in.avi"
+#File = "video/vid20240303-004627-in.avi"
 #File = "rtsp://192.168.1.221:8080/h264.sdp" # rtsp streams also work
+#File = "video/vid20240803-121926-in.avi"
+
+#File = "video/vid20240806-173513-in.avi" # really simple static file, skip?
+
+#File = "video/vid20240812-162007-in.avi" # "GOOD" file
+#File = "video/perf/vid20240303-004413-in.avi" # high motion
+#File = "video/perf/vid20240303-005048-in.avi" # bad light/small
+#File = "video/vid20240813-142649-in.avi" # simple, without glare
+#File = "video/vid20240813-143605-in.avi" # no glare, different brightness, shaking
+
+meta.set("ocrComposite", False)
+#File = "benchmark/classroom.avi"
+#File = "benchmark/highmotion.avi"
+File = "benchmark/smallanddark.avi"
+#File = "benchmark/noglare.avi"
+#File = "benchmark/noglare_exposuremotion.avi"
 
 captureAPI = cv.CAP_ANY
 if meta.get("platform") == "win32":
@@ -70,9 +87,15 @@ if SegDebug:
     segments.seg()
 
 log("start camera")
+start = meta.get("start")
+avgoption = meta.get("ocrComposite")
+source = f"Live {start }"
+meta.set("filename","LIVE")
 if 'File' in vars() and bool(File):
     cap = cv.VideoCapture(File)
     VideoWrite=False
+    meta.set("filename", File)
+    source = "File: "+File
 else:
     cap = cv.VideoCapture(Camera, captureAPI)
 dbg("camera check")
@@ -88,7 +111,7 @@ dbg("camera opened")
     #cap.set(cv.CAP_PROP_BRIGHTNESS, 0)
     #cap.set(cv.CAP_PROP_CONTRAST, 0)
 #else:
-cap.set(cv.CAP_PROP_EXPOSURE, -8)
+#cap.set(cv.CAP_PROP_EXPOSURE, -8)
     #cap.set(cv.CAP_PROP_BRIGHTNESS, 100) # artificially boost brightness
     #cap.set(cv.CAP_PROP_CONTRAST,8)
     #cap.set(cv.CAP_PROP_FOCUS, 180)
@@ -98,12 +121,16 @@ cap.set(cv.CAP_PROP_EXPOSURE, -8)
 #PROP = cv.CAP_PROP_AUTO_EXPOSURE # seems to get autodisabled as soon as we set _EXPOSURE
 PROP = cv.CAP_PROP_EXPOSURE # range: -8 to -4 (for acceptable framerates
 #PROP = cv.CAP_PROP_BRIGHTNESS # only sw
+#res(640,480)
 
+res(10,10)
 width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
 log(f"Camera {Camera}: {width}x{height}")
 log(f"Backend: {cap.getBackendName()}")
 dbg("camera initialized")
+
+meta.set("source", f"{source} AVG:{avgoption} {Camera}: {width}x{height}")
 meta.set(dict(
     camerabackend = cap.getBackendName(),
     camera = Camera,
@@ -169,6 +196,7 @@ while True:
             cap.set(PROP, Exposure)
             log("Exposure: "+str(Exposure))
         case 's':
+            log("stabilize toggled")
             meta.toggle("stabilize")
         case 'x':
             meta.toggle("ocrComposite")

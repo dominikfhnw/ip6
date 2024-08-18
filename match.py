@@ -43,7 +43,7 @@ def process(mat, threshold, binary=False, name=None, cutoff=0):
     elif '#' in out1:
         meta.inc(f"{stat}trej")
     else:
-        log(f"Err thresh {name} {frame=}: {str1}")
+        #log(f"Err thresh {name} {frame=}: {str1}")
         meta.inc(f"{stat}terr")
 
 
@@ -52,16 +52,18 @@ def process(mat, threshold, binary=False, name=None, cutoff=0):
         if out2 == "314159":
             meta.inc(f"{stat}match")
             meta.append(stat+"mscores", p(err2))
+            #print(f"{frame};2;{p(err2)};{out2}")
         else:
             #meta.set("save")
-            log(f"Err {name} {frame=}: {str2}")
+            #log(f"Err {name} {frame=}: {str2}")
             meta.inc(f"{stat}err")
             meta.append(stat+"escores", p(err2))
+            #print(f"{frame};1;{p(err2)};{out2}")
     else:
         meta.inc(f"{stat}rej")
         #log(f"Rej {name} {frame=}: {str2}")
         meta.set("result", "REJ"+out2)
-
+        #print(f"{frame};0;{p(err2)};{out2}")
 
 
     dbg(f"Number1: {str1}")

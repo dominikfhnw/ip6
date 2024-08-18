@@ -15,24 +15,27 @@ meta = dict(
     start_timestr = timestring(),
     frame = 0,
     ft = [0.033],
-    drawAruco = True,
-    drawRejects = True,
+    drawAruco = False,
+    drawRejects = False,
     drawROI = True,
     histNormalize = False,
-    stabilize = False,
+    stabilize = False,          # failed stabilization attempt
     ocr = True,
-    ocrComposite = False,
+    ocrComposite = True,        # frame averaging
     average = 10,
     thresh = False,
     logLevel = logging.INFO,
     invertDigits = True,
-    extractDebug = False,
+    extractDebug = True,
     height = 100,
     gui = True,
 )
 
 def get(name):
     return meta.get(name, None)
+
+def getnum(name):
+    return meta.get(name, 0)
 
 def true(name):
     return bool(meta.get(name, False))

@@ -1,0 +1,27 @@
+statistics:
+statistics: frames=820 one=671 both=323
+statistics:
+statistics: gauss: match=218 err=105 rej=None    tmatch=107 terr=4 trej=212
+statistics: gauss match: min=60 max=97 mean=82.58 std=8.10
+statistics: gauss err: min=44 max=84 mean=65.86 std=10.26
+statistics:
+statistics: gauss2: match=275 err=48 rej=None    tmatch=184 terr=3 trej=136
+statistics: gauss2 match: min=55 max=99 mean=88.27 std=8.49
+statistics: gauss2 err: min=46 max=88 mean=64.85 std=9.96
+statistics:
+statistics: gauss2 cutoff: match=227 err=6 rej=90    tmatch=184 terr=3 trej=136
+statistics: gauss2 cutoff match: min=81 max=99 mean=91.26 std=5.44
+statistics: gauss2 cutoff err: min=81 max=88 mean=83.33 std=2.43
+statistics:
+statistics: nonlin: match=197 err=126 rej=None    tmatch=50 terr=None trej=273
+statistics: nonlin match: min=55 max=73 mean=64.94 std=4.31
+statistics: nonlin err: min=50 max=66 mean=58.63 std=3.71
+statistics:
+statistics: otsu: match=291 err=32 rej=None    tmatch=171 terr=1 trej=151
+statistics: otsu match: min=52 max=99 mean=86.72 std=9.48
+statistics: otsu err: min=46 max=88 mean=62.56 std=10.82
+statistics:
+statistics: std: match=304 err=19 rej=None    tmatch=146 terr=None trej=177
+statistics: std match: min=55 max=77 mean=67.13 std=4.39
+statistics: std err: min=51 max=67 mean=58.32 std=3.92
+statistics:

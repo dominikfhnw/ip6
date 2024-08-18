@@ -22,26 +22,68 @@ def stats(name, mat):
 def show(name):
     stat = 'stat_'+name
 
-    match = meta.get(stat+'match')
-    rej = meta.get(stat+'rej')
-    err = meta.get(stat+'err')
+    file = meta.get("filename").removeprefix("benchmark/")
+    avgoption = meta.get("ocrComposite")
+    avg = ""
+    if avgoption:
+        avg = "avg"
+    else:
+        avg = "noavg"
 
-    tmatch = meta.get(stat+'tmatch')
-    trej = meta.get(stat+'trej')
-    terr = meta.get(stat+'terr')
+    match = meta.getnum(stat+'match')
+    rej = meta.getnum(stat+'rej')
+    err = meta.getnum(stat+'err')
 
-    mscores = meta.get(stat+'mscores')
-    escores = meta.get(stat+'escores')
+    tmatch = meta.getnum(stat+'tmatch')
+    trej = meta.getnum(stat+'trej')
+    terr = meta.getnum(stat+'terr')
 
-    logger.warn(f"{name}: {match=} {err=} {rej=}    {tmatch=} {terr=} {trej=}")
-    stats(name+' match', mscores)
-    stats(name+' err', escores)
+    mscores = meta.getnum(stat+'mscores')
+    escores = meta.getnum(stat+'escores')
+    #logger.warn(f"{name}: {match=} {err=} {rej=}    {tmatch=} {terr=} {trej=}")
 
-    #logger.warn(f"mscores {mscores}")
+    mmin = np.min(mscores)
+    mmax = np.max(mscores)
+    mmean = np.mean(mscores)
+    mstd = np.std(mscores)
+
+    emin = np.min(escores)
+    emax = np.max(escores)
+    emean = np.mean(escores)
+    estd = np.std(escores)
+
+    #logger.warn(f"{file};{name};RMSD;{avg};{match};{err};{rej};{mmin};{mmax};{mmean};{mstd};{emin};{emax};{emean};{estd}")
+    #logger.warn(f"{file};{name};THRESH;{avg};{tmatch};{terr};{trej}")
+
+
+    #stats(name+' match', mscores)
+    #stats(name+' err', escores)
+    mtxt = ";".join(map(str, mscores))
+    if escores:
+        etxt = ";".join(map(str, escores))
+    else:
+        etxt = ""
+    #logger.warn(f"{file};{name};error;{etxt}")
+    #logger.warn(f"{file};{name};match;{mtxt}")
+    if True:
+        if mscores:
+            for i in mscores:
+                logger.warn(f"{file};{name};match;{i}")
+        else:
+            logger.warn(f"{file};{name};match;")
+        if escores:
+            for i in escores:
+                logger.warn(f"{file};{name};error;{i}")
+        else: logger.warn(f"{file};{name};error;")
+
+
+#logger.warn(f"mscores {mscores}")
     #logger.warn(f"escores {escores}")
 
 
 def _end():
+    source = meta.get("source")
+    logger.warn(f"SOURCE: {source}")
     frames = meta.get('frame')
     one = meta.get('stat_onemarker')
     both = meta.get('stat_bothmarker')
@@ -49,7 +91,7 @@ def _end():
     logger.warn('')
     logger.warn(f"{frames=} {one=} {both=}")
     for name in sorted(set(meta.get('ocr_methods'))):
-        logger.warn('')
+        #logger.warn('')
         show(name)
     logger.warn('')
 
