@@ -32,6 +32,9 @@ meta = dict(
     hands = 2,
     gestures = True,
     async_gestures = False,
+    skeleton = False,
+    et = False,
+    lightsaber = False,
 )
 
 def get(name):

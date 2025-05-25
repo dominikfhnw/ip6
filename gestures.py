@@ -22,8 +22,8 @@ HandLandmarkerResult = mp.tasks.vision.HandLandmarkerResult
 
 ClassifierOptions = mp.tasks.components.processors.ClassifierOptions
 
-MARGIN = 10  # pixels
-FONT_SIZE = 1
+MARGIN = 20  # pixels
+FONT_SIZE = 0.7
 FONT_THICKNESS = 1
 HANDEDNESS_TEXT_COLOR = (88, 205, 54)  # vibrant green
 
@@ -37,20 +37,26 @@ def get_point(detection_result):
 
         # Get the top left corner of the detected hand's bounding box.
         # height, width, _ = rgb_image.shape
-        height = meta.get("height")
-        width = meta.get("width")
+        width = meta.get("height")
+        height = meta.get("width")
         x_coordinates = [landmark.x for landmark in hand_landmarks]
         y_coordinates = [landmark.y for landmark in hand_landmarks]
         text_x = int(min(x_coordinates) * width)
-        text_y = int(min(y_coordinates) * height) - MARGIN
+        text_y = int(min(y_coordinates) * height)
 
         return text_x, text_y
     return False
 
 
+def topoint(landmark, height, width, num):
+    l = landmark[num]
+    return int(l.x * width), int(l.y * height)
+
+
 def draw_landmarks_on_image(rgb_image, detection_result):
     has_gesture = meta.true("gestures")
     hand_landmarks_list = detection_result.hand_landmarks
+    hand_world_landmarks_list = detection_result.hand_world_landmarks
     handedness_list = detection_result.handedness
     if has_gesture:
         gestures_list = detection_result.gestures
@@ -59,24 +65,58 @@ def draw_landmarks_on_image(rgb_image, detection_result):
     # Loop through the detected hands to visualize.
     for idx in range(len(hand_landmarks_list)):
         hand_landmarks = hand_landmarks_list[idx]
+        hand_world_landmarks = hand_world_landmarks_list[idx]
         handedness = handedness_list[idx]
         if has_gesture:
             gestures = gestures_list[idx]
 
-        # Draw the hand landmarks.
-        hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-        hand_landmarks_proto.landmark.extend([
-            landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in hand_landmarks
-        ])
-        solutions.drawing_utils.draw_landmarks(
-            annotated_image,
-            hand_landmarks_proto,
-            solutions.hands.HAND_CONNECTIONS,
-            solutions.drawing_styles.get_default_hand_landmarks_style(),
-            solutions.drawing_styles.get_default_hand_connections_style())
+        if meta.true("skeleton"):
+            # Draw the hand landmarks.
+            hand_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            hand_landmarks_proto.landmark.extend([
+                landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in hand_landmarks
+            ])
+            solutions.drawing_utils.draw_landmarks(
+                annotated_image,
+                hand_landmarks_proto,
+                solutions.hands.HAND_CONNECTIONS,
+                solutions.drawing_styles.get_default_hand_landmarks_style(),
+                solutions.drawing_styles.get_default_hand_connections_style())
 
         # Get the top left corner of the detected hand's bounding box.
         height, width, _ = annotated_image.shape
+        is_left = handedness[0].category_name == "Left"
+        index = topoint(hand_landmarks, width, height, 8)
+        mid = topoint(hand_landmarks, width, height, 7)
+        base = topoint(hand_landmarks, width, height, 5)
+        lightsaber = (index[0] + 4 * (index[0] - mid[0]), index[1] + 4 * (index[1] - mid[1]))
+        # lightsaber = (index + vector)
+        log(f"{index=} {lightsaber=} {base=}")
+        if meta.true("lightsaber"):
+            if is_left:
+                color = (255, 165, 120)
+            else:
+                color = (120, 165, 255)
+            cv.line(annotated_image, pt1=index, pt2=lightsaber, thickness=8, color=color)
+
+        z = hand_landmarks[8].z
+        z2 = hand_world_landmarks[8].z
+        log(f"{detection_result.handedness}")
+        # z2 = detection_result.hand_world_landmarks[0].8].z
+        log(f"{z=} {z2=}")
+
+        if is_left:
+            index_offset = -120
+        else:
+            index_offset = 20
+
+        if meta.true("et"):
+            cv.circle(annotated_image, center=index, radius=10, color=(0, 165, 255), thickness=-1)
+            cv.line(annotated_image, pt1=index, pt2=base, thickness=2, color=(0, 165, 255))
+            cv.putText(annotated_image, f"{z * 100: .2f} {z2 * 100: .2f}",
+                       (index[0] + index_offset, index[1]), cv.FONT_HERSHEY_SIMPLEX,
+                       0.5, (0, 255, 255), FONT_THICKNESS, cv.LINE_AA)
+
         x_coordinates = [landmark.x for landmark in hand_landmarks]
         y_coordinates = [landmark.y for landmark in hand_landmarks]
         text_x = int(min(x_coordinates) * width)
@@ -84,7 +124,7 @@ def draw_landmarks_on_image(rgb_image, detection_result):
 
         # Draw handedness (left or right hand) on the image.
         if has_gesture:
-            text = f"{handedness[0].category_name} {gestures[0].category_name}"
+            text = f"{gestures[0].category_name} {handedness[0].category_name}"
         else:
             text = f"{handedness[0].category_name}"
 
@@ -120,8 +160,8 @@ def process_result(result):
     if res2:
         text = parse(result)
         dbg("print_result res: " + text)
-        meta.set("result", text)
-        meta.set("res_point", get_point(result))
+        # meta.set("result", text)
+        meta.set("res_point", res2)
     else:
         meta.unset("result")
         meta.unset("res_point")

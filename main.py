@@ -15,14 +15,16 @@ from timestring import timestring
 
 SegDebug = False # debug segment part
 Scale = 1 # global scale for small videos
+Scale2 = 1 # scale for final output
 
-Camera = 0 # which camera to use
+Camera = 1 # which camera to use
 AutoExposure = True # let camera do stuff VS settings for high fps
 Mirror = True # flip image (for webcam)
 Correct = False # apply camera calibration
 Detect = False # detect and do stuff with aruco markers
 Hands = True # hand/gesture detection
 VideoWrite = False # write out video
+Fast = False # show images without processing
 
 meta.set("ocrComposite", False)
 #File = "benchmark/classroom.avi"
@@ -50,16 +52,22 @@ dbg("sysinfo done")
 def closed(str):
     return cv.getWindowProperty(str, cv.WND_PROP_VISIBLE) < 1
 
-def res(x,y):
+def getres():
+    global width, height, fps
+    width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+    fps = int(cap.get(cv.CAP_PROP_FPS))
+    meta.set("width", width)
+    meta.set("height",height)
+    meta.set("fps", fps)
+
+
+def res(x,y, fps=30):
     log("change res")
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, y)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, x)
-    cap.set(cv.CAP_PROP_FPS, 60)
-    fps = cap.get(cv.CAP_PROP_FPS)
-    width = cap.get(cv.CAP_PROP_FRAME_WIDTH)
-    height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
-    meta.set("width", width)
-    meta.set("height", height)
+    cap.set(cv.CAP_PROP_FPS, fps)
+    getres()
     log(f"Changed to {width}x{height}, {fps}fps")
 
 def showfps(img):
@@ -96,14 +104,13 @@ if not cap.isOpened():
     exit()
 dbg("camera opened")
 
+getres()
 PROP = cv.CAP_PROP_EXPOSURE # range: -8 to -4 (for acceptable framerates
 #PROP = cv.CAP_PROP_BRIGHTNESS # only sw
-res(640,480)
+#res(640,480)
 
 #res(10,10)
-width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
-log(f"Camera {Camera}: {width}x{height}")
+log(f"Camera {Camera}: {width}x{height}, {fps}fps")
 log(f"Backend: {cap.getBackendName()}")
 dbg("camera initialized")
 
@@ -126,6 +133,23 @@ log("init time: "+timey.fromstr())
 log("beginning main loop")
 gui = meta.get("gui")
 
+if Fast:
+    #res(10,10,120)
+    #res(4096,3072,15)
+    #res(2048,1536,30)
+
+    while True:
+        t1 = timey.time()
+        ret, frame = cap.read()
+        match chr(cv.pollKey() & 0xFF).lower():
+            case 'q':
+                break
+        showfps(frame)
+        cv.imshow('out',frame)
+        t2 = timey.time()
+        meta.get("ft").append(t2 - t1 + 0.000001)
+    exit(0)
+
 while True:
     dbg("mainloop")
     t1 = timey.time()
@@ -136,7 +160,8 @@ while True:
         logger.fatal("Can't receive frame (stream end?). Exiting ...")
         break
     # square image for hand detection
-    frame = np.array(frame[0:height, 0:height])
+    offset = int((width-height)/2)
+    frame = np.array(frame[0:height, offset:height+offset])
     if VideoWrite:
         vout1.write(frame)
     #log("FOCUS "+str(cap.get(cv.CAP_PROP_FOCUS)))
@@ -148,14 +173,17 @@ while True:
         case 'q':
             break
         case '1':
-            res(1280,720)
+            res(2000,1500)
             Scale = 1
+            Scale2 = 1
         case '2':
             res(640,480)
             Scale = 1
+            Scale2 = 1
         case '3':
             res(10,10)
             Scale = 2
+            Scale2 = 1
         case 'n':
             meta.toggle("histNormalize")
         case 'm':
@@ -177,8 +205,16 @@ while True:
             cap.set(PROP, Exposure)
             log("Exposure: "+str(Exposure))
         case 's':
-            log("stabilize toggled")
-            meta.toggle("stabilize")
+            log("skeleton toggled")
+            meta.toggle("skeleton")
+        case 'e':
+            log("ET toggled")
+            meta.toggle("et")
+        case 'l':
+            log("lightsaber toggled")
+            meta.toggle("lightsaber")
+
+
         case 'x':
             meta.toggle("ocrComposite")
         case 't':
@@ -218,14 +254,16 @@ while True:
             color=(0,0,255)
             result=result.replace("REJ", "")
         point = meta.get("res_point")
-        p2 = (point[0]+0, point[1]-30)
+        p2 = (point[0]+0, point[1]+0)
         # TODO: separate function
         cv.putText(out, result,
-           p2,
+           point,
            fontFace=cv.FONT_HERSHEY_DUPLEX,
            fontScale=0.5,
            color=color
         )
+    if gui and Scale2 != 1:
+        out = cv.resize(out, None, None, Scale2, Scale2, cv.INTER_CUBIC)
     showfps(out)
     if VideoWrite:
             vout2.write(out)
