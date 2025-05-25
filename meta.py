@@ -29,6 +29,8 @@ meta = dict(
     extractDebug = True,
     height = 100,
     gui = True,
+    hands = 1,
+    gestures = True,
 )
 
 def get(name):

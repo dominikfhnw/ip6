@@ -13,7 +13,7 @@ def isave(img, name="out", force=False):
     start = meta.get('start_timestr')
     var = f"{start}-{frame}"
     filename = "out/"+fname+var+".jpg"
-    filename = f"vstat/{frame}-{start}-{fname}.jpg"
+    filename = f"gesture/{frame}-{start}-{fname}.jpg"
     if cv.imwrite(filename, img):
         log("Written "+filename)
     else:

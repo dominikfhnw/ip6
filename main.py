@@ -5,10 +5,12 @@ import aruco
 import correct
 import calib
 import cv2 as cv
+import numpy as np
 from isave import isave, ishow
 import segments
 import meta
 import statistics
+import gestures
 from timestring import timestring
 
 SegDebug = False # debug segment part
@@ -16,28 +18,16 @@ Scale = 1 # global scale for small videos
 
 Camera = 0 # which camera to use
 AutoExposure = True # let camera do stuff VS settings for high fps
-Mirror = False # flip image (for webcam)
+Mirror = True # flip image (for webcam)
 Correct = False # apply camera calibration
-Detect = True # detect and do stuff with aruco markers (the whole point here)
+Detect = False # detect and do stuff with aruco markers
+Hands = True # hand/gesture detection
 VideoWrite = False # write out video
-#File = "video/vid20240302-155541-in.avi" # process this file if defined
-#File = "video/perf/vid20240303-005048-in.avi"
-#File = "video/vid20240303-004627-in.avi"
-#File = "rtsp://192.168.1.221:8080/h264.sdp" # rtsp streams also work
-#File = "video/vid20240803-121926-in.avi"
-
-#File = "video/vid20240806-173513-in.avi" # really simple static file, skip?
-
-#File = "video/vid20240812-162007-in.avi" # "GOOD" file
-#File = "video/perf/vid20240303-004413-in.avi" # high motion
-#File = "video/perf/vid20240303-005048-in.avi" # bad light/small
-#File = "video/vid20240813-142649-in.avi" # simple, without glare
-#File = "video/vid20240813-143605-in.avi" # no glare, different brightness, shaking
 
 meta.set("ocrComposite", False)
 #File = "benchmark/classroom.avi"
 #File = "benchmark/highmotion.avi"
-File = "benchmark/smallanddark.avi"
+#File = "benchmark/smallanddark.avi"
 #File = "benchmark/noglare.avi"
 #File = "benchmark/noglare_exposuremotion.avi"
 
@@ -68,6 +58,8 @@ def res(x,y):
     fps = cap.get(cv.CAP_PROP_FPS)
     width = cap.get(cv.CAP_PROP_FRAME_WIDTH)
     height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
+    meta.set("width", width)
+    meta.set("height", height)
     log(f"Changed to {width}x{height}, {fps}fps")
 
 def showfps(img):
@@ -103,27 +95,12 @@ if not cap.isOpened():
     logger.fatal("Cannot open camera")
     exit()
 dbg("camera opened")
-#fps = cap.get(cv.CAP_PROP_FPS)
-#cap.set(cv.CAP_PROP_SHARPNESS,0) # disable any sharpening
-#cap.set(cv.CAP_PROP_SETTINGS, 1)
-#if AutoExposure:
-#    cap.set(cv.CAP_PROP_AUTO_EXPOSURE, 1)
-    #cap.set(cv.CAP_PROP_BRIGHTNESS, 0)
-    #cap.set(cv.CAP_PROP_CONTRAST, 0)
-#else:
-#cap.set(cv.CAP_PROP_EXPOSURE, -8)
-    #cap.set(cv.CAP_PROP_BRIGHTNESS, 100) # artificially boost brightness
-    #cap.set(cv.CAP_PROP_CONTRAST,8)
-    #cap.set(cv.CAP_PROP_FOCUS, 180)
-#log("CAM SETTING "+str(cap.set(cv.CAP_PROP_CONTRAST,0)))
-#PROP = cv.CAP_PROP_CONTRAST # only sw
 
-#PROP = cv.CAP_PROP_AUTO_EXPOSURE # seems to get autodisabled as soon as we set _EXPOSURE
 PROP = cv.CAP_PROP_EXPOSURE # range: -8 to -4 (for acceptable framerates
 #PROP = cv.CAP_PROP_BRIGHTNESS # only sw
-#res(640,480)
+res(640,480)
 
-res(10,10)
+#res(10,10)
 width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
 log(f"Camera {Camera}: {width}x{height}")
@@ -148,7 +125,9 @@ Exposure = -8
 log("init time: "+timey.fromstr())
 log("beginning main loop")
 gui = meta.get("gui")
+
 while True:
+    dbg("mainloop")
     t1 = timey.time()
     # Capture frame-by-frame
     ret, frame = cap.read()
@@ -156,12 +135,14 @@ while True:
     if not ret:
         logger.fatal("Can't receive frame (stream end?). Exiting ...")
         break
+    # square image for hand detection
+    frame = np.array(frame[0:height, 0:height])
     if VideoWrite:
         vout1.write(frame)
     #log("FOCUS "+str(cap.get(cv.CAP_PROP_FOCUS)))
     meta.unset("key")
     meta.unset("save")
-    meta.unset("result")
+    #meta.unset("result")
 
     match chr(cv.pollKey() & 0xFF).lower():
         case 'q':
@@ -228,7 +209,8 @@ while True:
         out = correct.process(out)
     if Detect:
         out = aruco.process(out)
-
+    if Hands:
+        out = gestures.process(frame, t1)
     result = meta.get("result")
     if result is not None:
         color=(0,255,0)
@@ -236,12 +218,12 @@ while True:
             color=(0,0,255)
             result=result.replace("REJ", "")
         point = meta.get("res_point")
-        p2 = (point[0]+20, point[1]+40)
+        p2 = (point[0]+0, point[1]-30)
         # TODO: separate function
         cv.putText(out, result,
            p2,
            fontFace=cv.FONT_HERSHEY_DUPLEX,
-           fontScale=1,
+           fontScale=0.5,
            color=color
         )
     showfps(out)
