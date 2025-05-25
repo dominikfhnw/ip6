@@ -82,6 +82,10 @@ def show(name):
 
 
 def _end():
+    ocr = meta.get('ocr_methods')
+    if not ocr:
+        dbg("no OCR done")
+        return
     source = meta.get("source")
     logger.warn(f"SOURCE: {source}")
     frames = meta.get('frame')
@@ -90,7 +94,7 @@ def _end():
 
     logger.warn('')
     logger.warn(f"{frames=} {one=} {both=}")
-    for name in sorted(set(meta.get('ocr_methods'))):
+    for name in sorted(set(ocr)):
         #logger.warn('')
         show(name)
     logger.warn('')

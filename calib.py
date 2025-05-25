@@ -52,7 +52,7 @@ def finish():
     # log("done with pictures")
     num = len(objpoints)
     if num == 0:
-        log("no calib data, returning")
+        dbg("no calib data, returning")
         return
     log("Points: " + str(num))
     dbg(objpoints)
