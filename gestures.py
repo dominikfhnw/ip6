@@ -136,10 +136,10 @@ def draw_landmarks_on_image(rgb_image, detection_result):
         else:
             text = f"{handedness[0].category_name}"
 
-        if flip:
-            text = text + " down"
+        if flip ^ is_left:
+            text = text + " back"
         else:
-            text = text + " up"
+            text = text + " palm"
 
         cv.putText(annotated_image, text,
                    (text_x, text_y), cv.FONT_HERSHEY_DUPLEX,
