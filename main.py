@@ -125,8 +125,8 @@ meta.set(dict(
 #res(352,288)
 if VideoWrite:
     # TODO: resolution
-    vout1 = cv.VideoWriter("video/vid"+timestring()+"-in.avi", cv.VideoWriter_fourcc('M','J','P','G'), 30.0, (width,height))
-    vout2 = cv.VideoWriter("video/vid"+timestring()+"-out.avi", cv.VideoWriter_fourcc('M','J','P','G'), 30.0, (width,height))
+    vout1 = cv.VideoWriter("video-gest/vid"+timestring()+"-in.avi", cv.VideoWriter_fourcc('M','J','P','G'), 12, (height,height))
+    vout2 = cv.VideoWriter("video-gest/vid"+timestring()+"-out.avi", cv.VideoWriter_fourcc('M','J','P','G'), 12, (height,height))
 
 Exposure = -8
 log("init time: "+timey.fromstr())
