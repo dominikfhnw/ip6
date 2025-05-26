@@ -229,8 +229,8 @@ if not meta.true("gestures"):
         running_mode=mode,
         result_callback=callback,
         num_hands=meta.get("hands"),
-        min_hand_detection_confidence=0.3,  # lower than value to get predictions more often
-        min_hand_presence_confidence=0.3,  # lower than value to get predictions more often
+        min_hand_detection_confidence=meta.get("hand_detection"),  # finding palm of hand
+        min_hand_presence_confidence=meta.get("hand_presence"),  # lower than value to get predictions more often
     )
     rec = HandLandmarker.create_from_options(options)
 else:
@@ -239,8 +239,8 @@ else:
         running_mode=mode,
         result_callback=callback,
         num_hands=meta.get("hands"),
-        min_hand_detection_confidence=0.3,  # lower than value to get predictions more often
-        min_hand_presence_confidence=0.3,  # lower than value to get predictions more often
+        min_hand_detection_confidence=meta.get("hand_detection"),  # finding palm of hand
+        min_hand_presence_confidence=meta.get("hand_presence"),  # lower than value to get predictions more often
         # NB: spelling error in documentation!
         # canned_gestures_classifier_options = ...
         canned_gesture_classifier_options=ClassifierOptions(

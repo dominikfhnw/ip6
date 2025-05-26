@@ -35,6 +35,8 @@ meta = dict(
     skeleton = False,
     et = False,
     lightsaber = False,
+    hand_detection = 0.1,   # finding palm of hand
+    hand_presence = 0.1,    # score to retrigger palm finding
 )
 
 def get(name):
