@@ -48,6 +48,10 @@ def get_point(detection_result):
     return False
 
 
+def crossP(a,b,p):
+    d = (p[0] - a[0]) * ( b[1]-a[1])  - (p[1]-a[1]) * (b[0]-a[0])
+    return d < 0
+
 def topoint(landmark, height, width, num):
     l = landmark[num]
     return int(l.x * width), int(l.y * height)
@@ -89,6 +93,10 @@ def draw_landmarks_on_image(rgb_image, detection_result):
         index = topoint(hand_landmarks, width, height, 8)
         mid = topoint(hand_landmarks, width, height, 7)
         base = topoint(hand_landmarks, width, height, 5)
+        pinkybase = topoint(hand_landmarks, width, height, 17)
+        wrist = topoint(hand_landmarks, width, height, 0)
+
+        flip = crossP(base, pinkybase, wrist)
         lightsaber = (index[0] + 4 * (index[0] - mid[0]), index[1] + 4 * (index[1] - mid[1]))
         # lightsaber = (index + vector)
         log(f"{index=} {lightsaber=} {base=}")
@@ -105,7 +113,7 @@ def draw_landmarks_on_image(rgb_image, detection_result):
         # z2 = detection_result.hand_world_landmarks[0].8].z
         log(f"{z=} {z2=}")
 
-        if is_left:
+        if flip:
             index_offset = -120
         else:
             index_offset = 20
@@ -127,6 +135,11 @@ def draw_landmarks_on_image(rgb_image, detection_result):
             text = f"{gestures[0].category_name} {handedness[0].category_name}"
         else:
             text = f"{handedness[0].category_name}"
+
+        if flip:
+            text = text + " down"
+        else:
+            text = text + " up"
 
         cv.putText(annotated_image, text,
                    (text_x, text_y), cv.FONT_HERSHEY_DUPLEX,
