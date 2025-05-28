@@ -8,6 +8,7 @@ log, dbg, logger = log.auto(__name__)
 
 Wide = meta.true("kinect_wide")
 Color = meta.true("kinect_color")
+Unbinned = meta.true("kinect_wide_unbinned")
 width, height = None, None
 
 def init():
@@ -18,21 +19,28 @@ def init():
         res = pyk4a.ColorResolution.OFF
 
     global width, height
+    fps = pyk4a.FPS.FPS_30
     if not Wide:
         mode = pyk4a.DepthMode.NFOV_UNBINNED
         width = 640
         height = 576
     else:
-        mode = pyk4a.DepthMode.WFOV_2X2BINNED
-        width = 512
-        height = 512
+        if Unbinned:
+            mode = pyk4a.DepthMode.WFOV_UNBINNED
+            width = 1024
+            height = 1024
+            fps = pyk4a.FPS.FPS_15
+        else:
+            mode = pyk4a.DepthMode.WFOV_2X2BINNED
+            width = 512
+            height = 512
 
     global k4a
     k4a = PyK4A(
         Config(
             color_resolution=res,
             depth_mode=mode,
-            camera_fps=pyk4a.FPS.FPS_30,
+            camera_fps=fps,
             synchronized_images_only=False,
         )
     )
