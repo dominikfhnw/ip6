@@ -15,6 +15,9 @@ meta = dict(
     start_timestr = timestring(),
     frame = 0,
     ft = [0.033],
+    logLevel = logging.INFO,
+    gui = True,
+# seven-segment OCR options
     drawAruco = False,
     drawRejects = False,
     drawROI = True,
@@ -24,11 +27,10 @@ meta = dict(
     ocrComposite = True,        # frame averaging
     average = 10,
     thresh = False,
-    logLevel = logging.INFO,
     invertDigits = True,
     extractDebug = True,
     height = 100,
-    gui = True,
+# Gesture recognition options
     mediapipe = True,       # global flag to load any mediapipe code
     mediapipe_gpu = False,  # GPU acceleration
     hands = 1,
