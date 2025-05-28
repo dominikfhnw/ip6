@@ -1,9 +1,12 @@
 import numpy as np
 import cv2 as cv
-import kinect_raw
 from isave import ishow
 import log
 import meta
+if meta.true("kinect_enable"):
+    import kinect_raw
+else:
+    import kinect_fake as kinect_raw
 
 log, dbg, logger = log.auto(__name__)
 
