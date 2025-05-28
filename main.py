@@ -10,7 +10,8 @@ from isave import isave, ishow
 import segments
 import meta
 import statistics
-import gestures
+if meta.true("mediapipe"):
+    import gestures
 from timestring import timestring
 import kinect
 
