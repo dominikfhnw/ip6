@@ -29,14 +29,24 @@ meta = dict(
     extractDebug = True,
     height = 100,
     gui = True,
-    hands = 2,
+    mediapipe = True,       # global flag to load any mediapipe code
+    mediapipe_gpu = False,  # GPU acceleration
+    hands = 1,
     gestures = True,
     async_gestures = False,
-    skeleton = False,
+    skeleton = True,
     et = False,
     lightsaber = False,
-    hand_detection = 0.1,   # finding palm of hand
-    hand_presence = 0.1,    # score to retrigger palm finding
+    hand_detection = 0.5,       # finding palm of hand
+    hand_presence = 0.5,        # score to retrigger palm finding
+    kinect_enable = False,      # enable Kinect
+    kinect_color = False,       # also get color picture from kinect
+    kinect_wide = False,        # wide FOV
+    kinect_lo = 1,              # Select pixels that are between lo and hi
+    kinect_hi = 600,            #   millimeters from the Kinect sensor
+    kinect_step = 100,
+    kinect_composite = False,   # DEBUG: composite color/IR image
+    kinect_depth = False,       # DEBUG: show depth overview
 )
 
 def get(name):
