@@ -9,6 +9,9 @@ import numpy as np
 from isave import isave, ishow
 import segments
 import meta
+if meta.get("platform") == "linux":
+    meta.unset("kinect_enable")
+    #meta.set("mediapipe_gpu")
 import statistics
 if meta.true("mediapipe"):
     import gestures
