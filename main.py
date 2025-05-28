@@ -12,6 +12,7 @@ import meta
 import statistics
 import gestures
 from timestring import timestring
+import kinect
 
 SegDebug = False # debug segment part
 Scale = 1 # global scale for small videos
