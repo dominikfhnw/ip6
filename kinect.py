@@ -17,7 +17,7 @@ def get():
 
 
 def process():
-    depth_raw, ir, _ = kinect_raw.get()
+    depth_raw, ir, color = kinect_raw.get()
     if depth_raw is None:
         return np.zeros((meta.num("height"), meta.num("width"), 3), np.dtype('u1'))
 
@@ -73,6 +73,16 @@ def process():
         rgb2[mask == 0] = (0, 0, 0)
         ishow("rgb2", rgb2)
 
+    if True:
+        depth = depth_raw.copy()
+        #depth[depth>4000] = 0
+        depth = cv.convertScaleAbs(depth, None, 1/8)
+        #depth = cv.normalize(depth_raw, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
+        depth = cv.applyColorMap(depth, cv.COLORMAP_JET)
+        log(f"{depth_raw.min()=} {depth_raw.max()=}")
+        ishow("depth", depth)
+    if color is not None:
+        ishow("color", color)
     ishow("ir", ir)
     ishow("ir2", ir2)
     ishow("ircolor", ircolor)
