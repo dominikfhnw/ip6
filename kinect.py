@@ -3,6 +3,7 @@ import cv2 as cv
 import kinect_raw
 from isave import ishow
 import log
+import meta
 
 log, dbg, logger = log.auto(__name__)
 
@@ -41,7 +42,9 @@ def colorize(image: np.ndarray):
 
 
 def process():
-    depth_raw, ir = kinect_raw.get()
+    depth_raw, ir, _ = kinect_raw.get()
+    if depth_raw is None:
+        return np.zeros((meta.num("height"), meta.num("width"), 3), np.dtype('u1'))
 
     # Select distance range
     lo = np.array([1])
@@ -53,14 +56,13 @@ def process():
     dr2[mask == 0] = (127, 127, 127)
     ishow("dr2", dr2)
 
-    ir2 = ir.copy()
-
-    # fix the ultra bright "too much reflection" pixels
-    ir[ir == 65535] = (ir.max() + 1)
-
     minVal, maxVal, minLoc, maxLoc = cv.minMaxLoc(depth_raw, mask)
     # log(f"IR MAX: {minLoc=}={minVal} {maxLoc=}={maxVal}")
     if ir is not None:
+        ir2 = ir.copy()
+
+        # fix the ultra bright "too much reflection" pixels
+        ir[ir == 65535] = (ir.max() + 1)
 
         ir = cv.normalize(ir, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
         # ir = cv.equalizeHist(ir)

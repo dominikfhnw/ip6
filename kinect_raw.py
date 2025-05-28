@@ -1,16 +1,23 @@
 import pyk4a
 from pyk4a import Config, PyK4A
 import meta
+import numpy as np
+import log
+
+log, dbg, logger = log.auto(__name__)
 
 Wide = meta.true("kinect_wide")
 Color = meta.true("kinect_color")
+width, height = None, None
 
 def init():
+    dbg("start init")
     if Color:
         res = pyk4a.ColorResolution.RES_1536P
     else:
         res = pyk4a.ColorResolution.OFF
 
+    global width, height
     if not Wide:
         mode = pyk4a.DepthMode.NFOV_UNBINNED
         width = 640
@@ -34,8 +41,20 @@ def init():
     meta.set("height",height)
 
     k4a.start()
+    dbg("end init")
     return width, height
 
 def get():
-    cap = k4a.get_capture();
-    return cap.depth, cap.ir
+    try:
+        cap = k4a.get_capture(50)
+    except:
+        log(f"capture timeout")
+        return None, None, None
+
+    if Color:
+        color = cap.transformed_color
+        if color is None:
+            color = np.zeros((height, width, 4), np.dtype('u1'))
+            log("borked color")
+        return cap.depth, cap.ir, color
+    return cap.depth, cap.ir, None

@@ -146,8 +146,9 @@ if Fast:
         t1 = timey.time()
         #ret, frame = cap.read()
 
-        depth, ir = kinect.get()
-        frame = cv.normalize(ir, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
+        depth, ir, color = kinect.get()
+        #frame = cv.normalize(ir, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
+        frame = color
         match chr(cv.pollKey() & 0xFF).lower():
             case 'q':
                 break
