@@ -23,7 +23,6 @@ AutoExposure = True # let camera do stuff VS settings for high fps
 Mirror = True # flip image (for webcam)
 Correct = False # apply camera calibration
 Aruco = False # detect and do stuff with aruco markers
-Hands = True # hand/gesture detection
 VideoWrite = False # write out video
 Fast = False # show images without processing
 
@@ -246,7 +245,7 @@ while True:
         out = correct.process(out)
     if Aruco:
         out = aruco.process(out)
-    if Hands:
+    if meta.true("mediapipe"):
         out = gestures.process(frame, t1)
     result = meta.get("result")
     if result is not None:
