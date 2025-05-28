@@ -143,7 +143,10 @@ if Fast:
 
     while True:
         t1 = timey.time()
-        ret, frame = cap.read()
+        #ret, frame = cap.read()
+
+        depth, ir = kinect.get()
+        frame = cv.normalize(ir, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
         match chr(cv.pollKey() & 0xFF).lower():
             case 'q':
                 break
