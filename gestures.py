@@ -223,6 +223,9 @@ if meta.true("mediapipe"):
         mode = VisionRunningMode.VIDEO
         callback = None
 
+    delegate=BaseOptions.Delegate.CPU
+    if meta.true("mediapipe_gpu"):
+        delegate=BaseOptions.Delegate.GPU
     if not meta.true("gestures"):
         options = HandLandmarkerOptions(
             base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
@@ -235,8 +238,7 @@ if meta.true("mediapipe"):
         rec = HandLandmarker.create_from_options(options)
     else:
         options = GestureRecognizerOptions(
-            #base_options=BaseOptions(model_asset_path='gesture_recognizer.task', delegate=BaseOptions.Delegate.GPU),
-            base_options=BaseOptions(model_asset_path='gesture_recognizer.task'),
+            base_options=BaseOptions(model_asset_path='gesture_recognizer.task', delegate=delegate),
             running_mode=mode,
             result_callback=callback,
             num_hands=meta.get("hands"),
