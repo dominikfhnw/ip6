@@ -76,7 +76,8 @@ def process():
     if True:
         depth = depth_raw.copy()
         #depth[depth>4000] = 0
-        depth = cv.convertScaleAbs(depth, None, 1/8)
+        max=3000    # max distance in mm
+        depth = cv.convertScaleAbs(depth, None, 255/max)
         #depth = cv.normalize(depth_raw, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
         depth = cv.applyColorMap(depth, cv.COLORMAP_JET)
         log(f"{depth_raw.min()=} {depth_raw.max()=}")
