@@ -211,13 +211,19 @@ while True:
         case 'a':
             cap.set(cv.CAP_PROP_AUTO_EXPOSURE, 1)
         case ',':
-            Exposure -= 1
-            cap.set(PROP, Exposure)
-            log("Exposure: "+str(Exposure))
+            #Exposure -= 1
+            #cap.set(PROP, Exposure)
+            #log("Exposure: "+str(Exposure))
+            meta.add("kinect_lo",meta.num("kinect_step"))
+            meta.add("kinect_hi",meta.num("kinect_step"))
+            log(f"RANGE+ {meta.get('kinect_lo')} {meta.get('kinect_hi')}")
         case '.':
-            Exposure += 1
-            cap.set(PROP, Exposure)
-            log("Exposure: "+str(Exposure))
+            #Exposure += 1
+            #cap.set(PROP, Exposure)
+            #log("Exposure: "+str(Exposure))
+            meta.sub("kinect_lo",meta.num("kinect_step"))
+            meta.sub("kinect_hi",meta.num("kinect_step"))
+            log(f"RANGE- {meta.get('kinect_lo')} {meta.get('kinect_hi')}")
         case 's':
             log("skeleton toggled")
             meta.toggle("skeleton")

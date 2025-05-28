@@ -86,6 +86,14 @@ def toggle(name):
     meta[name] = not meta[name]
     return meta[name]
 
+def add(name, val):
+    meta[name] = meta[name] + val
+    return meta[name]
+
+def sub(name, val):
+    meta[name] = meta[name] - val
+    return meta[name]
+
 def inc(name):
     global meta
     meta[name] = meta.get(name, 0) + 1
