@@ -49,7 +49,7 @@ def process():
         frame = ircolor.copy()
 
         minVal, maxVal, minLoc, maxLoc = cv.minMaxLoc(depth_raw, mask)
-        log(f"XXXXXXX {ircolor.shape=} {ircolor.dtype=} {depth_raw.shape=} {depth_raw.dtype=}")
+        #log(f"XXXXXXX {ircolor.shape=} {ircolor.dtype=} {depth_raw.shape=} {depth_raw.dtype=}")
         ircolor[depth_raw == maxVal]=(0,0,255)
         ircolor[depth_raw == minVal]=(255,0,0)
 
