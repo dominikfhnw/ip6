@@ -230,7 +230,7 @@ while True:
         case 'w':
             meta.set("save")
             log("save requested")
-            isave(frame, "frame",True)
+            #isave(frame, "frame",True)
             isave(out, "out", True)
         case ' ':
             out = calib.process(frame.copy())
@@ -244,7 +244,7 @@ while True:
     if gui and Mirror:
         copy = cv.flip(copy, 1)
     showfps(copy)
-    ishow('frame',  copy)
+    #ishow('frame',  copy)
     #out = frame - np.min(frame)
     #out = (out * (256/np.max(out))).astype("uint8")
     if Correct:
@@ -275,7 +275,8 @@ while True:
             vout2.write(out)
     ishow('out', out)
 
-    if gui and (closed("frame") or closed("out")):
+    if gui and (closed("out")):
+        dbg("window closed, breaking")
         break
 
     meta.inc("frame")
