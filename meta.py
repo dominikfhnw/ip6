@@ -42,14 +42,14 @@ meta = dict(
 def get(name):
     return meta.get(name, None)
 
-def getnum(name):
-    return meta.get(name, 0)
+def num(name) -> int:
+    return int(meta.get(name, 0))
 
-def true(name):
+def true(name) -> bool:
     return bool(meta.get(name, False))
 
 # assumes boolean True if no value was given
-def setkey(name, val=True):
+def setkey(name, val):
     global meta
     meta[name] = val
 
