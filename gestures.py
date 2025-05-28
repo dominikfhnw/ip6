@@ -213,39 +213,40 @@ def process(img: np.ndarray, t1):
 
     return img
 
+if meta.true("mediapipe"):
+    if meta.true("async_gestures"):
+        log("running asynchronously")
+        mode = VisionRunningMode.LIVE_STREAM
+        callback = print_result
+    else:
+        log("running synchronously")
+        mode = VisionRunningMode.VIDEO
+        callback = None
 
-if meta.true("async_gestures"):
-    log("running asynchronously")
-    mode = VisionRunningMode.LIVE_STREAM
-    callback = print_result
-else:
-    log("running synchronously")
-    mode = VisionRunningMode.VIDEO
-    callback = None
-
-if not meta.true("gestures"):
-    options = HandLandmarkerOptions(
-        base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
-        running_mode=mode,
-        result_callback=callback,
-        num_hands=meta.get("hands"),
-        min_hand_detection_confidence=meta.get("hand_detection"),  # finding palm of hand
-        min_hand_presence_confidence=meta.get("hand_presence"),  # lower than value to get predictions more often
-    )
-    rec = HandLandmarker.create_from_options(options)
-else:
-    options = GestureRecognizerOptions(
-        base_options=BaseOptions(model_asset_path='gesture_recognizer.task'),
-        running_mode=mode,
-        result_callback=callback,
-        num_hands=meta.get("hands"),
-        min_hand_detection_confidence=meta.get("hand_detection"),  # finding palm of hand
-        min_hand_presence_confidence=meta.get("hand_presence"),  # lower than value to get predictions more often
-        # NB: spelling error in documentation!
-        # canned_gestures_classifier_options = ...
-        canned_gesture_classifier_options=ClassifierOptions(
-            score_threshold=0,
-            max_results=-1
+    if not meta.true("gestures"):
+        options = HandLandmarkerOptions(
+            base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
+            running_mode=mode,
+            result_callback=callback,
+            num_hands=meta.get("hands"),
+            min_hand_detection_confidence=meta.get("hand_detection"),  # finding palm of hand
+            min_hand_presence_confidence=meta.get("hand_presence"),  # lower than value to get predictions more often
         )
-    )
-    rec = GestureRecognizer.create_from_options(options)
+        rec = HandLandmarker.create_from_options(options)
+    else:
+        options = GestureRecognizerOptions(
+            #base_options=BaseOptions(model_asset_path='gesture_recognizer.task', delegate=BaseOptions.Delegate.GPU),
+            base_options=BaseOptions(model_asset_path='gesture_recognizer.task'),
+            running_mode=mode,
+            result_callback=callback,
+            num_hands=meta.get("hands"),
+            min_hand_detection_confidence=meta.get("hand_detection"),  # finding palm of hand
+            min_hand_presence_confidence=meta.get("hand_presence"),  # lower than value to get predictions more often
+            # NB: spelling error in documentation!
+            # canned_gestures_classifier_options = ...
+            canned_gesture_classifier_options=ClassifierOptions(
+                score_threshold=0,
+                max_results=-1
+            )
+        )
+        rec = GestureRecognizer.create_from_options(options)
