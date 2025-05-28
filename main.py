@@ -18,7 +18,7 @@ SegDebug = False # debug segment part
 Scale = 1 # global scale for small videos
 Scale2 = 1 # scale for final output
 
-Camera = 1 # which camera to use
+Camera = -1 # which camera to use
 AutoExposure = True # let camera do stuff VS settings for high fps
 Mirror = True # flip image (for webcam)
 Correct = False # apply camera calibration
@@ -86,41 +86,44 @@ def showfps(img):
 if SegDebug:
     segments.seg()
 
-log("start camera")
-start = meta.get("start")
-avgoption = meta.get("ocrComposite")
-source = f"Live {start }"
-meta.set("filename","LIVE")
-if 'File' in vars() and bool(File):
-    cap = cv.VideoCapture(File)
-    VideoWrite=False
-    meta.set("filename", File)
-    source = "File: "+File
+if Camera < 0:
+    width, height = kinect.init()
 else:
-    cap = cv.VideoCapture(Camera, captureAPI)
-dbg("camera check")
-if not cap.isOpened():
-    logger.fatal("Cannot open camera")
-    exit()
-dbg("camera opened")
+    log("start camera")
+    start = meta.get("start")
+    avgoption = meta.get("ocrComposite")
+    source = f"Live {start }"
+    meta.set("filename","LIVE")
+    if 'File' in vars() and bool(File):
+        cap = cv.VideoCapture(File)
+        VideoWrite=False
+        meta.set("filename", File)
+        source = "File: "+File
+    else:
+        cap = cv.VideoCapture(Camera, captureAPI)
+    dbg("camera check")
+    if not cap.isOpened():
+        logger.fatal("Cannot open camera")
+        exit()
+    dbg("camera opened")
 
-getres()
-PROP = cv.CAP_PROP_EXPOSURE # range: -8 to -4 (for acceptable framerates
-#PROP = cv.CAP_PROP_BRIGHTNESS # only sw
-#res(640,480)
+    getres()
+    PROP = cv.CAP_PROP_EXPOSURE # range: -8 to -4 (for acceptable framerates
+    #PROP = cv.CAP_PROP_BRIGHTNESS # only sw
+    #res(640,480)
 
-#res(10,10)
-log(f"Camera {Camera}: {width}x{height}, {fps}fps")
-log(f"Backend: {cap.getBackendName()}")
-dbg("camera initialized")
+    #res(10,10)
+    log(f"Camera {Camera}: {width}x{height}, {fps}fps")
+    log(f"Backend: {cap.getBackendName()}")
+    dbg("camera initialized")
 
-meta.set("source", f"{source} AVG:{avgoption} {Camera}: {width}x{height}")
-meta.set(dict(
-    camerabackend = cap.getBackendName(),
-    camera = Camera,
-    camerawidth = int(width),
-    cameraheight = int(height),
-))
+    meta.set("source", f"{source} AVG:{avgoption} {Camera}: {width}x{height}")
+    meta.set(dict(
+        camerabackend = cap.getBackendName(),
+        camera = Camera,
+        camerawidth = int(width),
+        cameraheight = int(height),
+    ))
 
 #res(352,288)
 if VideoWrite:
@@ -153,12 +156,15 @@ if Fast:
 while True:
     dbg("mainloop")
     t1 = timey.time()
-    # Capture frame-by-frame
-    ret, frame = cap.read()
-    # if frame is read correctly ret is True
-    if not ret:
-        logger.fatal("Can't receive frame (stream end?). Exiting ...")
-        break
+    if Camera > 0:
+        # Capture frame-by-frame
+        ret, frame = cap.read()
+        # if frame is read correctly ret is True
+        if not ret:
+            logger.fatal("Can't receive frame (stream end?). Exiting ...")
+            break
+    else:
+        frame = kinect.process()
     # square image for hand detection
     offset = int((width-height)/2)
     frame = np.array(frame[0:height, offset:height+offset])
