@@ -21,7 +21,7 @@ Camera = 1 # which camera to use
 AutoExposure = True # let camera do stuff VS settings for high fps
 Mirror = True # flip image (for webcam)
 Correct = False # apply camera calibration
-Detect = False # detect and do stuff with aruco markers
+Aruco = False # detect and do stuff with aruco markers
 Hands = True # hand/gesture detection
 VideoWrite = False # write out video
 Fast = False # show images without processing
@@ -243,7 +243,7 @@ while True:
     #out = (out * (256/np.max(out))).astype("uint8")
     if Correct:
         out = correct.process(out)
-    if Detect:
+    if Aruco:
         out = aruco.process(out)
     if Hands:
         out = gestures.process(frame, t1)
