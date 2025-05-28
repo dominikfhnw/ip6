@@ -16,31 +16,6 @@ def get():
     return kinect_raw.get()
 
 
-def colorize(image: np.ndarray):
-    # if image is None:
-    #     log("NONE img")
-    #     fake = np.zeros(shape=((meta.num("width"), meta.num("height"))), dtype=cv.CV_8UC1)
-    #     return fake, fake, fake
-
-    depth = image.copy()
-
-    lo = np.array([1])
-    hi = np.array([500])
-
-    # Select distance range
-    mask = cv.inRange(depth, lo, hi)
-
-    depth[mask == 0] = 0
-
-    depth = cv.normalize(depth, None, 1, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
-    depth = cv.equalizeHist(depth)
-
-    # TODO DOC: inverting required? or maybe not
-    depth = (255 - depth)
-
-    return depth, mask
-
-
 def process():
     depth_raw, ir, _ = kinect_raw.get()
     if depth_raw is None:
