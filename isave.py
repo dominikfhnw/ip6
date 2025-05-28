@@ -1,4 +1,5 @@
 import cv2 as cv
+import numpy as np
 import log
 import meta
 
@@ -20,7 +21,10 @@ def isave(img, name="out", force=False):
         logger.fatal("Error writing file "+filename)
         exit()
 
-def ishow(name, img, save:bool=False):
+def ishow(name, img:np.ndarray, save:bool=False):
+    if img is None:
+        log(f"ishow None {name=}")
+        return
     if save and meta.true('save'):
         isave(img, name, force=True)
 
