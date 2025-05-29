@@ -41,7 +41,7 @@ meta = dict(
     lightsaber = False,
     hand_detection = 0.5,       # finding palm of hand
     hand_presence = 0.5,        # score to retrigger palm finding
-    kinect_enable = False,      # enable Kinect
+    kinect_enable = True,       # enable Kinect
     kinect_color = False,       # also get color picture from kinect
     kinect_wide = False,        # wide FOV
     kinect_lo = 1,              # Select pixels that are between lo and hi
@@ -49,6 +49,7 @@ meta = dict(
     kinect_step = 100,
     kinect_composite = False,   # DEBUG: composite color/IR image
     kinect_depth = False,       # DEBUG: show depth overview
+    kinect_passive = False,     # DEBUG: passive IR only
 )
 
 def get(name):
