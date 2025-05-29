@@ -55,7 +55,11 @@ def init():
     meta.set("width", width)
     meta.set("height",height)
 
-    k4a.start()
+    try:
+        k4a.start()
+    except:
+        logger.fatal("Opening Kinect failed")
+        exit(3)
     dbg("end init")
     return width, height
 
