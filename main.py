@@ -164,7 +164,7 @@ if Fast:
 while True:
     dbg("mainloop")
     t1 = timey.time()
-    if Camera > 0:
+    if Camera >= 0:
         # Capture frame-by-frame
         ret, frame = cap.read()
         # if frame is read correctly ret is True
