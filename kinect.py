@@ -22,19 +22,21 @@ def get():
     return kinect_raw.get()
 
 # Select distance range
-def range_mask(img):
+def range_mask(depth):
     lo = np.array([meta.num("kinect_lo")])
     hi = np.array([meta.num("kinect_hi")])
-    mask = cv.inRange(img, lo, hi)
+    mask = cv.inRange(depth, lo, hi)
     mask2 = np.array(mask, dtype=bool)
-    mask3 = np.stack((mask2,)*3, axis=-1)
-    return mask, mask3
+    mask2 = np.stack((mask2,)*3, axis=-1)
+    return mask, mask2
 
 def depth_relative(depth, mask, bool_mask):
     dr2 = cv.normalize(depth, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U, mask=mask)
     dr2 = cv.applyColorMap(dr2, cv.COLORMAP_JET)
     # This uses more CPU power than it should...
-    #dr2 = np.where(bool_mask, dr2, grey)
+    dr2 = np.where(bool_mask, dr2, grey)
+    #dr2[bool_mask] = np.array([127,127,127])
+    #dr2[mask==0]=np.array([127,127,127])
     ishow("dr2", dr2)
 
 def depth_absolute(depth):
@@ -105,6 +107,12 @@ def process_rgb(rgba, mask):
         rgb3[locs[0], locs[1]] = img1[locs[0], locs[1]]
         #rgb.Mat().copyTo(composite, mask2)
         ishow("composite", rgb3)
+
+
+def process_fast():
+    depth_raw, ir, _ = kinect_raw.get()
+    mask, _ = range_mask(depth_raw)
+    return process_ir(ir,mask)
 
 
 def process():
