@@ -10,6 +10,7 @@ log, dbg, logger = log.auto(__name__)
 Wide = meta.true("kinect_wide")
 Color = meta.true("kinect_color")
 Unbinned = meta.true("kinect_wide_unbinned")
+Passive = meta.true("kinect_passive")
 width, height = None, None
 
 def init():
@@ -21,7 +22,12 @@ def init():
 
     global width, height
     fps = pyk4a.FPS.FPS_30
-    if not Wide:
+    if Passive:
+        mode = pyk4a.DepthMode.PASSIVE_IR
+        width = 1024
+        height = 1024
+        fps = pyk4a.FPS.FPS_30
+    elif not Wide:
         mode = pyk4a.DepthMode.NFOV_UNBINNED
         width = 640
         height = 576
@@ -62,6 +68,9 @@ def get():
 
     save_data("kinect", depth=cap.depth, ir=cap.ir)
 
+    if Passive:
+        depth = np.zeros((height, width), np.dtype('u2'))
+        return depth, cap.ir, None
     if Color:
         color = cap.transformed_color
         if color is None:
