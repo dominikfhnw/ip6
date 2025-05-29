@@ -99,7 +99,7 @@ def draw_landmarks_on_image(rgb_image, detection_result):
         flip = crossP(base, pinkybase, wrist)
         lightsaber = (index[0] + 4 * (index[0] - mid[0]), index[1] + 4 * (index[1] - mid[1]))
         # lightsaber = (index + vector)
-        log(f"{index=} {lightsaber=} {base=}")
+        dbg(f"{index=} {lightsaber=} {base=}")
         if meta.true("lightsaber"):
             if is_left:
                 color = (255, 165, 120)
@@ -109,9 +109,9 @@ def draw_landmarks_on_image(rgb_image, detection_result):
 
         z = hand_landmarks[8].z
         z2 = hand_world_landmarks[8].z
-        log(f"{detection_result.handedness}")
+        dbg(f"{detection_result.handedness}")
         # z2 = detection_result.hand_world_landmarks[0].8].z
-        log(f"{z=} {z2=}")
+        dbg(f"{z=} {z2=}")
 
         if flip:
             index_offset = -120
