@@ -37,7 +37,7 @@ def depth_relative(depth, mask, bool_mask):
     dr2 = np.where(bool_mask, dr2, grey)
     #dr2[bool_mask] = np.array([127,127,127])
     #dr2[mask==0]=np.array([127,127,127])
-    ishow("dr2", dr2)
+    ishow("dr2", dr2, True)
 
 def depth_absolute(depth):
     #depth = depth_raw.copy()
@@ -93,7 +93,7 @@ def process_rgb(rgba, mask):
     rgb = cv.cvtColor(rgba, cv.COLOR_BGRA2BGR)
     rgb2 = rgb.copy()
     rgb2[mask == 0] = (0, 0, 0)
-    ishow("rgb2", rgb2)
+    ishow("rgb2", rgb2, True)
     ishow("color", rgb)
 
     if meta.true("kinect_composite"):
@@ -106,7 +106,7 @@ def process_rgb(rgba, mask):
         ishow("img1",img1)
         rgb3[locs[0], locs[1]] = img1[locs[0], locs[1]]
         #rgb.Mat().copyTo(composite, mask2)
-        ishow("composite", rgb3)
+        ishow("composite", rgb3, True)
 
 
 def process_fast():
