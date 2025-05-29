@@ -3,6 +3,7 @@ from pyk4a import Config, PyK4A
 import meta
 import numpy as np
 import log
+from isave import save_data
 
 log, dbg, logger = log.auto(__name__)
 
@@ -58,6 +59,8 @@ def get():
     except:
         log(f"capture timeout")
         return None, None, None
+
+    save_data("kinect", depth=cap.depth, ir=cap.ir)
 
     if Color:
         color = cap.transformed_color

@@ -12,8 +12,14 @@ def init():
     dbg("start init")
 
     global width, height
-    width = 512
-    height = 512
+    global depth, ir
+    ret = np.load("gesture/hand.npz")
+    log(f"{ret=}")
+    depth = ret["depth"]
+    ir = ret["ir"]
+
+    width = depth.shape[1]
+    height = depth.shape[0]
 
     meta.set("width", width)
     meta.set("height",height)
@@ -23,6 +29,4 @@ def init():
 
 def get():
     color = np.zeros((height, width, 4), np.dtype('u1'))
-    depth = np.zeros((height, width), np.dtype('u2'))
-
-    return depth, depth, color
+    return depth, ir, color
