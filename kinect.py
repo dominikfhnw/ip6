@@ -89,7 +89,7 @@ def process_ir_debug(img, depth_raw, mask):
     ishow("ircolor", ircolor)
 
 
-def process_rgb(rgba, mask):
+def process_rgb(rgba, mask, ir):
     rgb = cv.cvtColor(rgba, cv.COLOR_BGRA2BGR)
     rgb2 = rgb.copy()
     rgb2[mask == 0] = (0, 0, 0)
@@ -102,7 +102,9 @@ def process_rgb(rgba, mask):
         mask2 = cv.inRange(rgb3, black, black)
         locs = np.where(mask2 != 0)
         ishow("mask2",mask2)
-        img1 = cv.cvtColor(cv.equalizeHist(ireq), cv.COLOR_GRAY2BGR)
+        img1 = cv.normalize(ir, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
+        img1 = cv.equalizeHist(img1)
+        img1 = cv.cvtColor(img1, cv.COLOR_GRAY2BGR)
         ishow("img1",img1)
         rgb3[locs[0], locs[1]] = img1[locs[0], locs[1]]
         #rgb.Mat().copyTo(composite, mask2)
@@ -134,7 +136,7 @@ def process():
         exit(12)
 
     if rgba is not None:
-        process_rgb(rgba, mask)
+        process_rgb(rgba, mask, ir)
 
     if meta.true("kinect_depth"):
         depth_absolute(depth_raw)
