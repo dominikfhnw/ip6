@@ -1,4 +1,4 @@
-from time import time
+from time import perf_counter_ns
 import atexit
 import log
 
@@ -9,7 +9,15 @@ log, dbg, logger = log.auto(__name__)
 # - provide simple helper function to get time delta from start
 # - provide time()
 
+def time():
+    return perf_counter_ns() / (10 ** 9)
+
 t0 = time()
+
+def delta(name, t2, end = None):
+    if end is None:
+        end = time()
+    log(f"{name} time: {1000*(end - t2): .3f}ms")
 
 def fromstart():
     return time() - t0
