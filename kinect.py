@@ -21,7 +21,7 @@ ROI_ALG=cv.INTER_LINEAR
 def init():
     width, height = kinect_raw.init()
     global grey
-    grey = np.full((height, width, 3), 127, np.dtype('uint8'))
+    grey = np.full((ROI_SIZE*ROI_SCALE, ROI_SIZE*ROI_SCALE, 3), 127, np.dtype('uint8'))
     return width, height
 
 
@@ -72,12 +72,13 @@ def depth_absolute(depth):
 def process_ir_full(ir):
     ir = cv.normalize(ir, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
     ir = cv.equalizeHist(ir)
+    cv.rectangle(ir, (ROI_X,ROI_Y),(ROI_X+ROI_SIZE,ROI_Y+ROI_SIZE), (255,255,255), 2)
     ishow("ir", ir)
 
 
 def process_ir_mask(ir, mask):
     ir = cv.normalize(ir, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U, mask=mask)
-    return cv.cvtColor(ir, cv.COLOR_GRAY2BGR)
+    return ir
 
 
 def process_ir(ir, mask):
@@ -85,15 +86,13 @@ def process_ir(ir, mask):
     imax = ir.max() + 1
     ir[ir == 65535] = imax
 
-    if not meta.true("kinect_fast"):
-        process_ir_full(ir)
     return process_ir_mask(ir, mask)
 
 
 def process_ir_debug(img, depth_raw, mask):
     minVal, maxVal, minLoc, maxLoc = cv.minMaxLoc(depth_raw, mask)
-    ircolor = img.copy()
-    #log(f"XXXXXXX {ircolor.shape=} {ircolor.dtype=} {depth_raw.shape=} {depth_raw.dtype=}")
+    ircolor = cv.normalize(img, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U, mask=mask)
+    ircolor = cv.equalizeHist(ircolor)
     #ircolor[depth_raw == maxVal]=(0,0,255)
     #ircolor[depth_raw == minVal]=(255,0,0)
 
@@ -136,6 +135,8 @@ def process():
     if depth_raw is None:
         return np.zeros((meta.num("height"), meta.num("width"), 3), np.dtype('u1'))
 
+    roi_depth=roi(depth_raw)
+    roi_mask, roi_bool_mask = range_mask(roi(depth_raw))
     mask, bool_mask = range_mask(depth_raw)
 
     if meta.true("kinect_fast"):
@@ -145,12 +146,15 @@ def process():
 
     #log(f"{mask.shape=} {mask.dtype=} {bool_mask.shape=} {bool_mask.dtype=}")
     if True:
-        depth_relative(depth_raw, mask, bool_mask)
+        depth_relative(roi_depth, roi_mask, roi_bool_mask)
 
     if ir is not None:
-        frame = process_ir(ir,mask)
+        proc = process_ir(roi(ir),roi_mask)
         #log(f"{frame.shape=} {frame.dtype=}")
-        #process_ir_debug(frame, depth_raw, mask)
+        if not meta.true("kinect_fast"):
+            process_ir_full(ir)
+            #process_ir_debug(ir, depth_raw, mask)
+        frame = cv.cvtColor(proc, cv.COLOR_GRAY2BGR)
     else:
         log("IR failed")
         exit(12)
