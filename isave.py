@@ -30,7 +30,7 @@ def save_data(name,*args, **kwds):
     if not meta.true('save'):
         return
     filename = fname(name)
-    np.savez_compressed(filename,*args, **kwds)
+    np.savez_compressed(filename, meta=meta.meta, *args, **kwds)
 
 def ishow(name, img:np.ndarray, save:bool=False):
     if img is None:
