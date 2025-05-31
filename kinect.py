@@ -27,8 +27,11 @@ def range_mask(depth):
     lo = np.array([meta.num("kinect_lo")])
     hi = np.array([meta.num("kinect_hi")])
     mask = cv.inRange(depth, lo, hi)
-    mask2 = np.array(mask, dtype=bool)
-    mask2 = np.stack((mask2,)*3, axis=-1)
+    if meta.true("kinect_fast"):
+        mask2 = None
+    else:
+        mask2 = np.array(mask, dtype=bool)
+        mask2 = np.stack((mask2,)*3, axis=-1)
     return mask, mask2
 
 def depth_relative(depth, mask, bool_mask):
@@ -67,7 +70,8 @@ def process_ir(ir, mask):
     imax = ir.max() + 1
     ir[ir == 65535] = imax
 
-    process_ir_full(ir)
+    if not meta.true("kinect_fast"):
+        process_ir_full(ir)
     return process_ir_mask(ir, mask)
 
 
@@ -125,6 +129,12 @@ def process():
         return np.zeros((meta.num("height"), meta.num("width"), 3), np.dtype('u1'))
 
     mask, bool_mask = range_mask(depth_raw)
+
+    if meta.true("kinect_fast"):
+        frame = process_ir(ir,mask)
+        timey.delta(__name__, t1)
+        return frame
+
     #log(f"{mask.shape=} {mask.dtype=} {bool_mask.shape=} {bool_mask.dtype=}")
     if True:
         depth_relative(depth_raw, mask, bool_mask)

@@ -50,6 +50,7 @@ meta = dict(
     kinect_composite = False,   # DEBUG: composite color/IR image
     kinect_depth = False,       # DEBUG: show depth overview
     kinect_passive = False,     # DEBUG: passive IR only
+    kinect_fast = False,        # disable all unnecessary processing
 )
 
 def get(name):
