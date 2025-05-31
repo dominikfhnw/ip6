@@ -90,7 +90,7 @@ def get():
     try:
         if Playback:
             cap = playback.get_next_capture()
-            return cap.depth, cap.ir, None
+            return cap.depth, cap.ir, cap.color
         cap = k4a.get_capture(50)
         if Record:
             record.write_capture(cap)
@@ -102,13 +102,13 @@ def get():
         log(f"capture timeout")
         return None, None, None
 
-    save_data("kinect", depth=cap.depth, ir=cap.ir, imu=imu)
     x,y,z = imu["acc_sample"]
     temperature = imu["temperature"]
     tilt = -(z/9.81)
     angle = 90-math.degrees(math.acos(tilt))
     dbg(f"{angle=:.2f}° {temperature=:.1f}°C")
 
+    color = None
     if Passive:
         depth = np.zeros((height, width), np.dtype('u2'))
         return depth, cap.ir, None
@@ -117,8 +117,7 @@ def get():
         if color is None:
             color = np.zeros((height, width, 4), np.dtype('u1'))
             log("borked color")
-        return cap.depth, cap.ir, color
-    #depth, ir, color = cap.depth.copy(), cap.ir.copy(), None
-    depth, ir, color = cap.depth, cap.ir, None
+    depth, ir = cap.depth, cap.ir
+    save_data("kinect", depth=depth, ir=ir, imu=imu, color=color)
     timey.delta(__name__,t1)
     return depth, ir, color
