@@ -127,14 +127,7 @@ def process_rgb(rgba, mask, ir):
         img1 = cv.cvtColor(img1, cv.COLOR_GRAY2BGR)
         ishow("img1",img1)
         rgb3[locs[0], locs[1]] = img1[locs[0], locs[1]]
-        #rgb.Mat().copyTo(composite, mask2)
         ishow("composite", rgb3, True)
-
-
-def process_fast():
-    depth_raw, ir, _ = kinect_raw.get()
-    mask, _ = range_mask(depth_raw)
-    return process_ir(ir,mask)
 
 
 def process():
