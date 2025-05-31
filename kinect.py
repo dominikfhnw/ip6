@@ -71,8 +71,7 @@ def depth_absolute(depth):
 
 def process_ir_full(ir):
     ir = cv.normalize(ir, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
-    #irx = cv.equalizeHist(ir)
-    #ishow("irx",irx)
+    ir = cv.equalizeHist(ir)
     ishow("ir", ir)
 
 
