@@ -26,8 +26,10 @@ ROI_ALG=cv.INTER_LINEAR
 def init():
     width, height = kinect_raw.init()
     global grey
+    # keep grey small if we don't prescale
     grey = np.full((ROI_SCALED, ROI_SCALED, 3), 127, np.dtype('uint8'))
-    return width, height
+    # output image is always size*scale
+    return ROI_SIZE*ROI_SCALE, ROI_SIZE*ROI_SCALE
 
 
 def get():
