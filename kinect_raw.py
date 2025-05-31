@@ -1,9 +1,9 @@
 import pyk4a
-from pyk4a import Config, PyK4A
+from pyk4a import Config, PyK4A, PyK4ARecord, PyK4APlayback
 import meta
 import numpy as np
 import log
-from isave import save_data
+from isave import save_data, fname
 import timey
 import math
 
@@ -13,10 +13,25 @@ Wide = meta.true("kinect_wide")
 Color = meta.true("kinect_color")
 Unbinned = meta.true("kinect_wide_unbinned")
 Passive = meta.true("kinect_passive")
+Record = meta.true("kinect_record")
+Playback = meta.true("kinect_playback")
 width, height = None, None
 
 def init():
     dbg("start init")
+    global width, height
+    if Playback:
+        global playback
+        playback = PyK4APlayback(meta.get("kinect_file"))
+        playback.open()
+        log(f"Record length: {playback.length / 1000000: 0.2f} sec")
+        capture = playback.get_next_capture()
+        height, width = capture.depth.shape
+        log(f"{capture.depth.shape=}")
+        playback.seek(0)
+        meta.set("width", width)
+        meta.set("height",height)
+        return width, height
     if Color:
         res = pyk4a.ColorResolution.RES_1536P
         sync = True
@@ -24,7 +39,6 @@ def init():
         res = pyk4a.ColorResolution.OFF
         sync = False
 
-    global width, height
     fps = pyk4a.FPS.FPS_30
     if Passive:
         mode = pyk4a.DepthMode.PASSIVE_IR
@@ -61,6 +75,10 @@ def init():
 
     try:
         k4a.start()
+        if Record:
+            global record
+            record = PyK4ARecord(config=k4a._config, path=fname("kinect")+".k4a")
+            record.create()
     except:
         logger.fatal("Opening Kinect failed")
         exit(3)
@@ -70,8 +88,16 @@ def init():
 def get():
     t1 = timey.time()
     try:
+        if Playback:
+            cap = playback.get_next_capture()
+            return cap.depth, cap.ir, None
         cap = k4a.get_capture(50)
+        if Record:
+            record.write_capture(cap)
         imu = k4a.get_imu_sample(50)
+    except EOFError:
+        log("end of stream")
+        exit(0)
     except:
         log(f"capture timeout")
         return None, None, None
