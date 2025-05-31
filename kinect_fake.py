@@ -13,7 +13,7 @@ def init():
 
     global width, height
     global depth, ir
-    ret = np.load("gesture/hand.npz")
+    ret = np.load("gesture/"+meta.get("kinect_fake"))
     log(f"{ret=}")
     depth = ret["depth"]
     ir = ret["ir"]

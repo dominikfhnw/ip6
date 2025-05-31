@@ -42,6 +42,7 @@ meta = dict(
     hand_detection = 0.5,       # finding palm of hand
     hand_presence = 0.5,        # score to retrigger palm finding
     kinect_enable = True,       # enable Kinect
+    kinect_fake = "kinect20250531-141208-266.npz", # input to use when kinect disabled
     kinect_color = False,       # also get color picture from kinect
     kinect_wide = False,        # wide FOV
     kinect_lo = 1,              # Select pixels that are between lo and hi
