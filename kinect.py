@@ -171,7 +171,7 @@ def process():
         #log(f"{frame.shape=} {frame.dtype=}")
         if not meta.true("kinect_fast"):
             process_ir_full(ir)
-            #process_ir_debug(ir, depth_raw, mask)
+            process_ir_debug(roi(ir), roi_depth, roi_mask)
         proc = scale(proc)
         frame = cv.cvtColor(proc, cv.COLOR_GRAY2BGR)
     else:
