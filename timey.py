@@ -17,7 +17,7 @@ t0 = time()
 def delta(name, t2, end = None):
     if end is None:
         end = time()
-    log(f"{name} time: {1000*(end - t2): .3f}ms")
+    dbg(f"{name} time: {1000*(end - t2): .3f}ms")
 
 def fromstart():
     return time() - t0
