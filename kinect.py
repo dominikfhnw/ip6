@@ -109,18 +109,20 @@ def process_ir_debug(img, depth_raw, mask):
     minVal, maxVal, minLoc, maxLoc = cv.minMaxLoc(depth_raw, mask)
     ircolor = cv.normalize(img, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U, mask=mask)
     ircolor = cv.equalizeHist(ircolor)
-    #ircolor[depth_raw == maxVal]=(0,0,255)
-    #ircolor[depth_raw == minVal]=(255,0,0)
+    ircolor = cv.cvtColor(ircolor, cv.COLOR_GRAY2BGR)
+    ircolor[depth_raw == maxVal]=(0,0,255)
+    ircolor[depth_raw == minVal]=(255,0,0)
 
     cv.circle(ircolor, center=minLoc, radius=3, color=(255, 0, 0), thickness=-1)
     cv.circle(ircolor, center=maxLoc, radius=3, color=(0, 0, 255), thickness=-1)
     # cv.line(anno, pt1=index, pt2=base, thickness=2, color=(0, 165, 255))
     cv.putText(ircolor, f"{minVal / 10: .1f}cm",
-               (minLoc[0] + 10, minLoc[1]), cv.FONT_HERSHEY_SIMPLEX,
-               1, (0, 255, 255), 1, cv.LINE_AA)
+               (minLoc[0] + 10, minLoc[1] + 10), cv.FONT_HERSHEY_SIMPLEX,
+               0.5, (0, 255, 0), 1, cv.LINE_AA)
     cv.putText(ircolor, f"{maxVal / 10: .1f}cm",
-               (maxLoc[0] + 10, maxLoc[1]), cv.FONT_HERSHEY_SIMPLEX,
-               1, (0, 255, 255), 1, cv.LINE_AA)
+               (maxLoc[0] + 10, maxLoc[1] + 10), cv.FONT_HERSHEY_SIMPLEX,
+               0.5, (0, 255, 0), 1, cv.LINE_AA)
+    ircolor = scale(ircolor)
     ishow("ircolor", ircolor)
 
 
