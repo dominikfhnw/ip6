@@ -28,5 +28,8 @@ def init():
     return width, height
 
 def get():
-    color = np.zeros((height, width, 4), np.dtype('u1'))
+    if Color:
+        color = np.zeros((height, width, 4), np.dtype('u1'))
+    else:
+        color = None
     return depth, ir, color
