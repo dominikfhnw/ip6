@@ -70,11 +70,12 @@ def get():
     t1 = timey.time()
     try:
         cap = k4a.get_capture(50)
+        imu = k4a.get_imu_sample(50)
     except:
         log(f"capture timeout")
         return None, None, None
 
-    save_data("kinect", depth=cap.depth, ir=cap.ir)
+    save_data("kinect", depth=cap.depth, ir=cap.ir, imu=imu)
 
     if Passive:
         depth = np.zeros((height, width), np.dtype('u2'))
