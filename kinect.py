@@ -52,7 +52,10 @@ def scale(img):
 
 # Select distance range
 def range_mask(depth):
-    lo = np.array([meta.num("kinect_lo")])
+    lo = meta.num("kinect_lo")
+    if lo < 1:
+        lo = 1
+    lo = np.array([lo])
     hi = np.array([meta.num("kinect_hi")])
     mask = cv.inRange(depth, lo, hi)
     if meta.true("kinect_fast"):
