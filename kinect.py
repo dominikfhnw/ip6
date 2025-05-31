@@ -7,6 +7,7 @@ if meta.true("kinect_enable"):
     import kinect_raw
 else:
     import kinect_fake as kinect_raw
+import timey
 
 log, dbg, logger = log.auto(__name__)
 
@@ -118,6 +119,7 @@ def process_fast():
 
 
 def process():
+    t1 = timey.time()
     depth_raw, ir, rgba = kinect_raw.get()
     if depth_raw is None:
         return np.zeros((meta.num("height"), meta.num("width"), 3), np.dtype('u1'))
@@ -140,4 +142,5 @@ def process():
 
     if meta.true("kinect_depth"):
         depth_absolute(depth_raw)
+    timey.delta(__name__, t1)
     return frame

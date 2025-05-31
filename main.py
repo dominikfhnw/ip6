@@ -296,6 +296,7 @@ while True:
     meta.inc("frame")
     t2 = timey.time()
     meta.get("ft").append(t2 - t1 + 0.000001)
+    timey.delta(__name__,t1,t2)
     #log(f'{1/(t2 - t1 + 0.0001):.0f}fps')
 
 cv.destroyAllWindows()

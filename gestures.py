@@ -2,6 +2,7 @@ import log
 import cv2 as cv
 import numpy as np
 import meta
+import timey
 
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
@@ -190,6 +191,7 @@ def print_result(result, output_image: mp.Image, timestamp_ms: int):
 
 
 def process(img: np.ndarray, t1):
+    t2 = timey.time()
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img)
     timestamp_ms = int(t1 * 1000)
     dbg(f"gestures proc {img.shape} {timestamp_ms}")
@@ -210,7 +212,7 @@ def process(img: np.ndarray, t1):
             result = rec.detect_for_video(mp_image, timestamp_ms)
         img = draw_landmarks_on_image(img, result)
         process_result(result)
-
+    timey.delta(__name__,t2)
     return img
 
 if meta.true("mediapipe"):

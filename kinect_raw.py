@@ -4,6 +4,7 @@ import meta
 import numpy as np
 import log
 from isave import save_data
+import timey
 
 log, dbg, logger = log.auto(__name__)
 
@@ -64,6 +65,7 @@ def init():
     return width, height
 
 def get():
+    t1 = timey.time()
     try:
         cap = k4a.get_capture(50)
     except:
@@ -81,4 +83,7 @@ def get():
             color = np.zeros((height, width, 4), np.dtype('u1'))
             log("borked color")
         return cap.depth, cap.ir, color
-    return cap.depth, cap.ir, None
+    #depth, ir, color = cap.depth.copy(), cap.ir.copy(), None
+    depth, ir, color = cap.depth, cap.ir, None
+    timey.delta(__name__,t1)
+    return depth, ir, color
