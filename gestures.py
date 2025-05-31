@@ -206,6 +206,7 @@ def process(img: np.ndarray, t1):
             # dbg("got result " + str(globalresult.hand_world_landmarks))
             img = draw_landmarks_on_image(img, globalresult)
     else:
+        # TODO: The "Using NORM_RECT without IMAGE_DIMENSIONS" is emitted here
         if meta.true("gestures"):
             result = rec.recognize_for_video(mp_image, timestamp_ms)
         else:
