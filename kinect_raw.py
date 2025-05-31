@@ -18,8 +18,10 @@ def init():
     dbg("start init")
     if Color:
         res = pyk4a.ColorResolution.RES_1536P
+        sync = True
     else:
         res = pyk4a.ColorResolution.OFF
+        sync = False
 
     global width, height
     fps = pyk4a.FPS.FPS_30
@@ -49,7 +51,7 @@ def init():
             color_resolution=res,
             depth_mode=mode,
             camera_fps=fps,
-            synchronized_images_only=False,
+            synchronized_images_only=sync,
         )
     )
 
