@@ -11,6 +11,12 @@ import timey
 
 log, dbg, logger = log.auto(__name__)
 
+ROI_X=210
+ROI_Y=10
+ROI_SIZE=300
+ROI_ROTATE=cv.ROTATE_90_COUNTERCLOCKWISE
+ROI_SCALE=2
+ROI_ALG=cv.INTER_LINEAR
 
 def init():
     width, height = kinect_raw.init()
@@ -21,6 +27,16 @@ def init():
 
 def get():
     return kinect_raw.get()
+
+
+def roi(img):
+    roi = np.array(img[ROI_Y:ROI_Y+ROI_SIZE, ROI_X:ROI_X+ROI_SIZE])
+    roi = np.rot90(roi, axes=(0,1))
+    return cv.resize(roi, None, None, ROI_SCALE, ROI_SCALE, ROI_ALG)
+
+    #cv.rotate(roi, ROI_ROTATE, roi)
+    #return roi
+
 
 # Select distance range
 def range_mask(depth):
