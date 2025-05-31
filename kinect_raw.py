@@ -5,6 +5,7 @@ import numpy as np
 import log
 from isave import save_data
 import timey
+import math
 
 log, dbg, logger = log.auto(__name__)
 
@@ -76,6 +77,11 @@ def get():
         return None, None, None
 
     save_data("kinect", depth=cap.depth, ir=cap.ir, imu=imu)
+    x,y,z = imu["acc_sample"]
+    temperature = imu["temperature"]
+    tilt = -(z/9.81)
+    angle = 90-math.degrees(math.acos(tilt))
+    dbg(f"{angle=:.2f}° {temperature=:.1f}°C")
 
     if Passive:
         depth = np.zeros((height, width), np.dtype('u2'))
