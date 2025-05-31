@@ -16,12 +16,17 @@ ROI_Y=10
 ROI_SIZE=300
 ROI_ROTATE=cv.ROTATE_90_COUNTERCLOCKWISE
 ROI_SCALE=2
+ROI_PRESCALE=False
+if ROI_PRESCALE:
+    ROI_SCALED=ROI_SIZE*ROI_SCALE
+else:
+    ROI_SCALED=ROI_SIZE
 ROI_ALG=cv.INTER_LINEAR
 
 def init():
     width, height = kinect_raw.init()
     global grey
-    grey = np.full((ROI_SIZE*ROI_SCALE, ROI_SIZE*ROI_SCALE, 3), 127, np.dtype('uint8'))
+    grey = np.full((ROI_SCALED, ROI_SCALED, 3), 127, np.dtype('uint8'))
     return width, height
 
 
@@ -32,11 +37,16 @@ def get():
 def roi(img):
     roi = np.array(img[ROI_Y:ROI_Y+ROI_SIZE, ROI_X:ROI_X+ROI_SIZE])
     roi = np.rot90(roi, axes=(0,1))
-    return cv.resize(roi, None, None, ROI_SCALE, ROI_SCALE, ROI_ALG)
+    if ROI_PRESCALE and ROI_SCALE != 1:
+        roi = cv.resize(roi, None, None, ROI_SCALE, ROI_SCALE, ROI_ALG)
+    return roi
 
-    #cv.rotate(roi, ROI_ROTATE, roi)
-    #return roi
 
+def scale(img):
+    if ROI_PRESCALE or ROI_SCALE == 1:
+        return img
+    else:
+        return cv.resize(img, None, None, ROI_SCALE, ROI_SCALE, ROI_ALG)
 
 # Select distance range
 def range_mask(depth):
@@ -57,6 +67,7 @@ def depth_relative(depth, mask, bool_mask):
     dr2 = np.where(bool_mask, dr2, grey)
     #dr2[bool_mask] = np.array([127,127,127])
     #dr2[mask==0]=np.array([127,127,127])
+    dr2 = scale(dr2)
     ishow("dr2", dr2, True)
 
 def depth_absolute(depth):
@@ -154,6 +165,7 @@ def process():
         if not meta.true("kinect_fast"):
             process_ir_full(ir)
             #process_ir_debug(ir, depth_raw, mask)
+        proc = scale(proc)
         frame = cv.cvtColor(proc, cv.COLOR_GRAY2BGR)
     else:
         log("IR failed")
