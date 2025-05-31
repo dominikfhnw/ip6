@@ -31,6 +31,7 @@ def save_data(name,*args, **kwds):
         return
     filename = fname(name)
     np.savez_compressed(filename, meta=meta.meta, *args, **kwds)
+    log("Written data "+filename+".npz")
 
 def ishow(name, img:np.ndarray, save:bool=False):
     if img is None:
