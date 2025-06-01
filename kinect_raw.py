@@ -98,9 +98,12 @@ def get():
     except EOFError:
         log("end of stream")
         exit(0)
-    except:
+    except pyk4a.errors.K4ATimeoutException:
         log(f"capture timeout")
         return None, None, None
+    except Exception as ex:
+        log(f"exception: {ex=} {ex.args=} {type(ex)=}")
+        exit(5)
 
     x,y,z = imu["acc_sample"]
     temperature = imu["temperature"]
