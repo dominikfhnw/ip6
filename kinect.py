@@ -153,6 +153,7 @@ def process():
     if depth_raw is None:
         return np.zeros((meta.num("height"), meta.num("width"), 3), np.dtype('u1'))
 
+    depth_raw[depth_raw==0]=65535
     roi_depth=roi(depth_raw)
     roi_mask, roi_bool_mask = range_mask(roi(depth_raw))
     mask, bool_mask = range_mask(depth_raw)
