@@ -82,6 +82,11 @@ def show(name):
 
 
 def _end():
+    ft = len(meta.get("ft"))
+    fsum = sum(meta.get("ft")[-ft:])
+    fps = ft / fsum
+    time = fsum / ft
+    logger.warn(f"Overall FPS: {fps:.2f}, average frame time {1000*time:.2f}ms")
     ocr = meta.get('ocr_methods')
     if not ocr:
         dbg("no OCR done")
