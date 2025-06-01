@@ -6,6 +6,7 @@ import log
 from isave import save_data, fname
 import timey
 import math
+import atexit
 
 log, dbg, logger = log.auto(__name__)
 
@@ -16,14 +17,18 @@ Passive = meta.true("kinect_passive")
 Record = meta.true("kinect_record")
 Playback = meta.true("kinect_playback")
 width, height = None, None
+record = None
 
 def init():
     dbg("start init")
     global width, height
     if Playback:
+        fake = PyK4A()
+        fake.open()
         global playback
         playback = PyK4APlayback(meta.get("kinect_file"))
         playback.open()
+        playback._calibration = fake.calibration
         log(f"Record length: {playback.length / 1000000: 0.2f} sec")
         capture = playback.get_next_capture()
         height, width = capture.depth.shape
@@ -79,8 +84,8 @@ def init():
             global record
             record = PyK4ARecord(config=k4a._config, path=fname("kinect")+".k4a")
             record.create()
-    except:
-        logger.fatal("Opening Kinect failed")
+    except Exception as ex:
+        logger.fatal(f"Opening Kinect failed: {ex=}")
         exit(3)
     dbg("end init")
     return width, height
@@ -90,7 +95,7 @@ def get():
     try:
         if Playback:
             cap = playback.get_next_capture()
-            return cap.depth, cap.ir, cap.color
+            return cap.depth, cap.ir, cap.color, None
         cap = k4a.get_capture(50)
         if Record:
             record.write_capture(cap)
@@ -126,3 +131,14 @@ def get():
     save_data("kinect", depth=depth, ir=ir, imu=imu, color=color)
     timey.delta(__name__,t1)
     return depth, ir, color, color2
+
+
+def _end():
+    if record is not None:
+        log("finalizing record")
+        record.flush()
+        record.close()
+        log(f"{record.path}: {record.captures_count} frames written.")
+
+
+atexit.register(_end)
