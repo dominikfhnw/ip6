@@ -26,8 +26,8 @@ def isave(img, name="out", force=False):
         logger.fatal("Error writing file "+filename)
         exit()
 
-def save_data(name,*args, **kwds):
-    if not meta.true('save'):
+def save_data(name,force:bool=False, *args, **kwds):
+    if not force and not meta.true('save'):
         return
     filename = fname(name)
     np.savez_compressed(filename, meta=meta.meta, *args, **kwds)
