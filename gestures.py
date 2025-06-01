@@ -3,6 +3,7 @@ import cv2 as cv
 import numpy as np
 import meta
 import timey
+import math
 
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
@@ -57,6 +58,18 @@ def topoint(landmark, height, width, num):
     l = landmark[num]
     return int(l.x * width), int(l.y * height)
 
+def distance3(thumbw, indexw,name=""):
+    x1, y1, z1 = thumbw.x, thumbw.y, thumbw.z
+    x2, y2, z2 = indexw.x, indexw.y, indexw.z
+    distance = 100*math.sqrt( (x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2 )
+    return distance
+
+def distance2(thumbw, indexw,name=""):
+    x1, y1 = thumbw.x, thumbw.y
+    x2, y2 = indexw.x, indexw.y
+    distance = 100*math.sqrt( (x2-x1)**2 + (y2-y1)**2)
+    return distance
+
 
 def draw_landmarks_on_image(rgb_image, detection_result):
     has_gesture = meta.true("gestures")
@@ -96,6 +109,28 @@ def draw_landmarks_on_image(rgb_image, detection_result):
         base = topoint(hand_landmarks, width, height, 5)
         pinkybase = topoint(hand_landmarks, width, height, 17)
         wrist = topoint(hand_landmarks, width, height, 0)
+        thumb = topoint(hand_landmarks, width, height, 4)
+        middle = topoint(hand_landmarks, width, height, 12)
+        ring = topoint(hand_landmarks, width, height, 16)
+        pinky = topoint(hand_landmarks, width, height, 20)
+
+        dist2 = distance2(hand_world_landmarks[4], hand_world_landmarks[8], "world")
+        dist5 = distance2(hand_world_landmarks[4], hand_world_landmarks[12], "world")
+
+        log(f"DIST index:{dist2=:.1f}cm middle:{dist5=:.1f}cm ")
+        cv.circle(annotated_image, center=index, radius=5, color=(127, 127, 255), thickness=1, lineType=cv.LINE_AA)
+        cv.circle(annotated_image, center=thumb, radius=5, color=(127, 127, 255), thickness=1, lineType=cv.LINE_AA)
+        cv.circle(annotated_image, center=middle, radius=5, color=(255, 127, 127), thickness=1, lineType=cv.LINE_AA)
+        cv.circle(annotated_image, center=ring, radius=5, color=(127, 200, 127), thickness=1, lineType=cv.LINE_AA)
+        cv.circle(annotated_image, center=pinky, radius=5, color=(127, 200, 127), thickness=1, lineType=cv.LINE_AA)
+
+        click1 = int((index[0]+thumb[0])/2), int((index[1]+thumb[1])/2)
+        click2 = int((middle[0]+thumb[0])/2), int((middle[1]+thumb[1])/2)
+
+        if dist2 < 1:
+            cv.circle(annotated_image, center=click1, radius=5, color=(0, 0, 255), thickness=-1, lineType=cv.LINE_AA)
+        if dist5 < 1:
+            cv.circle(annotated_image, center=click2, radius=5, color=(255, 0, 0), thickness=-1, lineType=cv.LINE_AA)
 
         flip = crossP(base, pinkybase, wrist)
         lightsaber = (index[0] + 4 * (index[0] - mid[0]), index[1] + 4 * (index[1] - mid[1]))
@@ -115,9 +150,16 @@ def draw_landmarks_on_image(rgb_image, detection_result):
         dbg(f"{z=} {z2=}")
 
         if flip:
-            index_offset = -120
+            index_offset = -80
         else:
             index_offset = 20
+
+        cv.putText(annotated_image, f"{dist2:.2f}cm",
+                   (click1[0] + index_offset, click1[1]), cv.FONT_HERSHEY_SIMPLEX,
+                   0.5, (0, 255, 255), FONT_THICKNESS, cv.LINE_AA)
+        cv.putText(annotated_image, f"{dist5:.2f}cm",
+                   (click2[0] + index_offset, click2[1] - 20), cv.FONT_HERSHEY_SIMPLEX,
+                   0.5, (0, 255, 127), FONT_THICKNESS, cv.LINE_AA)
 
         if meta.true("et"):
             cv.circle(annotated_image, center=index, radius=10, color=(0, 165, 255), thickness=-1)
@@ -192,6 +234,7 @@ def print_result(result, output_image: mp.Image, timestamp_ms: int):
 
 def process(img: np.ndarray, t1):
     t2 = timey.time()
+    # TODO: BGR/RGB swapped?
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img)
     timestamp_ms = int(t1 * 1000)
     dbg(f"gestures proc {img.shape} {timestamp_ms}")
@@ -206,7 +249,7 @@ def process(img: np.ndarray, t1):
             # dbg("got result " + str(globalresult.hand_world_landmarks))
             img = draw_landmarks_on_image(img, globalresult)
     else:
-        # TODO: The "Using NORM_RECT without IMAGE_DIMENSIONS" is emitted here
+        # TODO: The "Using NORM_RECT without IMAGE_DIMENSIONS" error is emitted here
         if meta.true("gestures"):
             result = rec.recognize_for_video(mp_image, timestamp_ms)
         else:
@@ -214,44 +257,47 @@ def process(img: np.ndarray, t1):
         img = draw_landmarks_on_image(img, result)
         process_result(result)
     timey.delta(__name__,t2)
-    return img
+    return img, result
 
-if meta.true("mediapipe"):
-    if meta.true("async_gestures"):
-        log("running asynchronously")
-        mode = VisionRunningMode.LIVE_STREAM
-        callback = print_result
-    else:
-        log("running synchronously")
-        mode = VisionRunningMode.VIDEO
-        callback = None
+def init():
+    if meta.true("mediapipe"):
+        if meta.true("async_gestures"):
+            log("running asynchronously")
+            mode = VisionRunningMode.LIVE_STREAM
+            callback = print_result
+        else:
+            log("running synchronously")
+            mode = VisionRunningMode.VIDEO
+            callback = None
 
-    delegate=BaseOptions.Delegate.CPU
-    if meta.true("mediapipe_gpu"):
-        delegate=BaseOptions.Delegate.GPU
-    if not meta.true("gestures"):
-        options = HandLandmarkerOptions(
-            base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
-            running_mode=mode,
-            result_callback=callback,
-            num_hands=meta.get("hands"),
-            min_hand_detection_confidence=meta.get("hand_detection"),  # finding palm of hand
-            min_hand_presence_confidence=meta.get("hand_presence"),  # lower than value to get predictions more often
-        )
-        rec = HandLandmarker.create_from_options(options)
-    else:
-        options = GestureRecognizerOptions(
-            base_options=BaseOptions(model_asset_path='gesture_recognizer.task', delegate=delegate),
-            running_mode=mode,
-            result_callback=callback,
-            num_hands=meta.get("hands"),
-            min_hand_detection_confidence=meta.get("hand_detection"),  # finding palm of hand
-            min_hand_presence_confidence=meta.get("hand_presence"),  # lower than value to get predictions more often
-            # NB: spelling error in documentation!
-            # canned_gestures_classifier_options = ...
-            canned_gesture_classifier_options=ClassifierOptions(
-                score_threshold=0,
-                max_results=-1
+        delegate=BaseOptions.Delegate.CPU
+        if meta.true("mediapipe_gpu"):
+            delegate=BaseOptions.Delegate.GPU
+        if not meta.true("gestures"):
+            options = HandLandmarkerOptions(
+                base_options=BaseOptions(model_asset_path='hand_landmarker.task'),
+                running_mode=mode,
+                result_callback=callback,
+                num_hands=meta.get("hands"),
+                min_hand_detection_confidence=meta.get("hand_detection"),  # finding palm of hand
+                min_hand_presence_confidence=meta.get("hand_presence"),  # lower than value to get predictions more often
             )
-        )
-        rec = GestureRecognizer.create_from_options(options)
+            rec = HandLandmarker.create_from_options(options)
+        else:
+            options = GestureRecognizerOptions(
+                base_options=BaseOptions(model_asset_path='gesture_recognizer.task', delegate=delegate),
+                running_mode=mode,
+                result_callback=callback,
+                num_hands=meta.get("hands"),
+                min_hand_detection_confidence=meta.get("hand_detection"),  # finding palm of hand
+                min_hand_presence_confidence=meta.get("hand_presence"),  # lower than value to get predictions more often
+                # NB: spelling error in documentation!
+                # canned_gestures_classifier_options = ...
+                canned_gesture_classifier_options=ClassifierOptions(
+                    score_threshold=0,
+                    max_results=-1
+                )
+            )
+            rec = GestureRecognizer.create_from_options(options)
+
+init()
