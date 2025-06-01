@@ -100,7 +100,7 @@ def get():
         exit(0)
     except pyk4a.errors.K4ATimeoutException:
         log(f"capture timeout")
-        return None, None, None
+        return None, None, None, None
     except Exception as ex:
         log(f"exception: {ex=} {ex.args=} {type(ex)=}")
         exit(5)
@@ -112,15 +112,17 @@ def get():
     dbg(f"{angle=:.2f}° {temperature=:.1f}°C")
 
     color = None
+    color2 = None
     if Passive:
         depth = np.zeros((height, width), np.dtype('u2'))
-        return depth, cap.ir, None
+        return depth, cap.ir, None, None
     if Color:
         color = cap.transformed_color
+        color2 = cap.color
         if color is None:
             color = np.zeros((height, width, 4), np.dtype('u1'))
             log("borked color")
     depth, ir = cap.depth, cap.ir
     save_data("kinect", depth=depth, ir=ir, imu=imu, color=color)
     timey.delta(__name__,t1)
-    return depth, ir, color
+    return depth, ir, color, color2
