@@ -84,6 +84,7 @@ def depth_relative(depth, mask, bool_mask, name="dr2"):
     #dr2[mask==0]=np.array([127,127,127])
     dr2 = scale(dr2)
     ishow(name, dr2, True)
+    return dr2
 
 
 def depth_relative2(depth, mask, bool_mask, name="dr2"):
@@ -110,14 +111,14 @@ def depth_absolute(depth):
     #log(f"{depth_raw.min()=} {depth_raw.max()=}")
     ishow("depth", depth)
 
-def process_ir_full(ir):
+def process_ir_full(ir, name="ir"):
     ir = cv.normalize(ir, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
     ir = cv.equalizeHist(ir)
     if AVG_IR:
         global ir_stab
         ir_stab.append(ir)
     cv.rectangle(ir, (ROI_X,ROI_Y),(ROI_X+ROI_SIZE,ROI_Y+ROI_SIZE), (255,255,255), 2)
-    ishow("ir", ir)
+    ishow(name, ir)
 
 
 def process_ir_mask(ir, mask):
@@ -183,6 +184,7 @@ def process():
     if depth_raw is None:
         return np.zeros((meta.num("height"), meta.num("width"), 3), np.dtype('u1'))
 
+    depth_orig=depth_raw.copy()
     depth_raw[depth_raw==0]=65535
     roi_depth=roi(depth_raw)
     roi_mask, roi_bool_mask = range_mask(roi_depth)
@@ -195,7 +197,8 @@ def process():
         depth_relative(avg_depth, avg_roi_mask, avg_roi_bool_mask, "dr avg")
 
     if meta.true("kinect_fast"):
-        frame = process_ir(ir,mask)
+        frame = process_ir(roi(ir),roi_mask)
+        frame = cv.cvtColor(frame, cv.COLOR_GRAY2BGR)
         timey.delta(__name__, t1)
         return frame
 
