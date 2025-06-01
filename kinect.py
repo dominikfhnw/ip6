@@ -49,6 +49,10 @@ def roi(img):
         roi = cv.resize(roi, None, None, ROI_SCALE, ROI_SCALE, ROI_ALG)
     return roi
 
+def roi_color(img,scaler):
+    roi = np.array(img[int(ROI_Y*scaler):int((ROI_Y+ROI_SIZE)*scaler), int(ROI_X*scaler):int((ROI_X+ROI_SIZE)*scaler)])
+    roi = np.rot90(roi, axes=(0,1))
+    return roi
 
 def scale(img, alg=ROI_ALG):
     if ROI_PRESCALE or ROI_SCALE == 1:
@@ -154,6 +158,8 @@ def process_rgb(rgba, mask, ir):
     rgb = cv.cvtColor(rgba, cv.COLOR_BGRA2BGR)
     rgb2 = rgb.copy()
     rgb2[mask == 0] = (0, 0, 0)
+    rgb = scale(rgb)
+    rgb2 = scale(rgb2)
     ishow("rgb2", rgb2, True)
     ishow("color", rgb)
 
@@ -173,7 +179,7 @@ def process_rgb(rgba, mask, ir):
 
 def process():
     t1 = timey.time()
-    depth_raw, ir, rgba = kinect_raw.get()
+    depth_raw, ir, rgba, orig_color = kinect_raw.get()
     if depth_raw is None:
         return np.zeros((meta.num("height"), meta.num("width"), 3), np.dtype('u1'))
 
@@ -216,7 +222,13 @@ def process():
         exit(12)
 
     if rgba is not None:
-        process_rgb(rgba, mask, ir)
+        process_rgb(roi(rgba), roi_mask, roi(ir))
+        if orig_color is not None:
+            co2 = np.array(orig_color[:, 171:1878])
+            color_scale = 1536 / 576
+            cv.rectangle(co2, (int(ROI_X*color_scale),int(ROI_Y*color_scale)),(int((ROI_X+ROI_SIZE)*color_scale),int((ROI_Y+ROI_SIZE)*color_scale)), (255,255,255), 2)
+            frame = roi_color(co2, color_scale)
+            frame = cv.cvtColor(frame, cv.COLOR_BGRA2BGR)
 
     if meta.true("kinect_depth"):
         depth_absolute(depth_raw)
