@@ -262,6 +262,7 @@ def process(img: np.ndarray, t1):
     return img, result
 
 def init():
+    global rec
     if meta.true("mediapipe"):
         if meta.true("async_gestures"):
             log("running asynchronously")
