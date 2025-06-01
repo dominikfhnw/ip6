@@ -1,6 +1,6 @@
 import numpy as np
 import cv2 as cv
-from isave import ishow
+from isave import ishow, save_data
 import log
 import meta
 if meta.true("kinect_enable"):
@@ -8,8 +8,14 @@ if meta.true("kinect_enable"):
 else:
     import kinect_fake as kinect_raw
 import timey
+from imagefunctions import avg
 
 log, dbg, logger = log.auto(__name__)
+
+depth_stab = []
+ir_stab = []
+AVG_Depth = False
+AVG_IR = False
 
 ROI_X=210
 ROI_Y=10
@@ -101,6 +107,9 @@ def depth_absolute(depth):
 def process_ir_full(ir):
     ir = cv.normalize(ir, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
     ir = cv.equalizeHist(ir)
+    if AVG_IR:
+        global ir_stab
+        ir_stab.append(ir)
     cv.rectangle(ir, (ROI_X,ROI_Y),(ROI_X+ROI_SIZE,ROI_Y+ROI_SIZE), (255,255,255), 2)
     ishow("ir", ir)
 
@@ -168,13 +177,21 @@ def process():
 
     depth_raw[depth_raw==0]=65535
     roi_depth=roi(depth_raw)
-    roi_mask, roi_bool_mask = range_mask(roi(depth_raw))
-    mask, bool_mask = range_mask(depth_raw)
+    roi_mask, roi_bool_mask = range_mask(roi_depth)
+    if AVG_Depth:
+        global depth_stab
+        depth_stab.append(roi_depth)
+        avg_depth = avg(depth_stab,500, 'float32', 'float32')
+        save_data("avg_depth", avg_depth=avg_depth, depth_raw=depth_raw)
+        avg_roi_mask, avg_roi_bool_mask = range_mask(avg_depth.astype(np.dtype('uint16')))
+        depth_relative(avg_depth, avg_roi_mask, avg_roi_bool_mask, "dr avg")
 
     if meta.true("kinect_fast"):
         frame = process_ir(ir,mask)
         timey.delta(__name__, t1)
         return frame
+
+    mask, bool_mask = range_mask(depth_raw)
 
     #log(f"{mask.shape=} {mask.dtype=} {bool_mask.shape=} {bool_mask.dtype=}")
     if True:
@@ -185,7 +202,9 @@ def process():
         #log(f"{frame.shape=} {frame.dtype=}")
         if not meta.true("kinect_fast"):
             process_ir_full(ir)
-            process_ir_debug(roi(ir), roi_depth, roi_mask)
+            if AVG_IR:
+                process_ir_full(avg(ir_stab,10), "ir stab")
+            #process_ir_debug(roi(ir), roi_depth, roi_mask)
         proc = scale(proc)
         frame = cv.cvtColor(proc, cv.COLOR_GRAY2BGR)
     else:
