@@ -129,8 +129,10 @@ def draw_landmarks_on_image(rgb_image, detection_result):
 
         if dist2 < 1:
             cv.circle(annotated_image, center=click1, radius=5, color=(0, 0, 255), thickness=-1, lineType=cv.LINE_AA)
+            meta.inc("click1")
         if dist5 < 1:
             cv.circle(annotated_image, center=click2, radius=5, color=(255, 0, 0), thickness=-1, lineType=cv.LINE_AA)
+            meta.inc("click2")
 
         flip = crossP(base, pinkybase, wrist)
         lightsaber = (index[0] + 4 * (index[0] - mid[0]), index[1] + 4 * (index[1] - mid[1]))

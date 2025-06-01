@@ -87,6 +87,9 @@ def _end():
     fps = ft / fsum
     time = fsum / ft
     logger.warn(f"Overall FPS: {fps:.2f}, average frame time {1000*time:.2f}ms")
+
+    log(f"Click: {meta.get('click1')=} {meta.get('click2')=} ")
+
     ocr = meta.get('ocr_methods')
     if not ocr:
         dbg("no OCR done")
