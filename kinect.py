@@ -188,6 +188,15 @@ def process():
     depth_raw[depth_raw==0]=65535
     roi_depth=roi(depth_raw)
     roi_mask, roi_bool_mask = range_mask(roi_depth)
+
+    if meta.true("kinect_fast"):
+        global ROI_SCALE
+        ROI_SCALE=1
+        f = depth_relative2(roi(depth_orig), roi_mask, roi_bool_mask)
+        frame = cv.cvtColor(f, cv.COLOR_GRAY2BGR)
+        timey.delta(__name__, t1)
+        return frame
+
     if AVG_Depth:
         global depth_stab
         depth_stab.append(roi_depth)
@@ -196,11 +205,6 @@ def process():
         avg_roi_mask, avg_roi_bool_mask = range_mask(avg_depth.astype(np.dtype('uint16')))
         depth_relative(avg_depth, avg_roi_mask, avg_roi_bool_mask, "dr avg")
 
-    if meta.true("kinect_fast"):
-        frame = process_ir(roi(ir),roi_mask)
-        frame = cv.cvtColor(frame, cv.COLOR_GRAY2BGR)
-        timey.delta(__name__, t1)
-        return frame
 
     mask, bool_mask = range_mask(depth_raw)
 
