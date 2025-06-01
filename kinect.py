@@ -89,9 +89,11 @@ def depth_relative2(depth, mask, bool_mask, name="dr2"):
     depth[mask==0]=maxd
 
     gg = cv.normalize(depth, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
-    #gg = 255-gg
+    gg = 255-gg
+    #gg = (0.7*gg).astype('u1')
     gg = scale(gg, cv.INTER_NEAREST)
     ishow("gg", gg)
+    return gg
 
 
 def depth_absolute(depth):
@@ -196,6 +198,8 @@ def process():
     #log(f"{mask.shape=} {mask.dtype=} {bool_mask.shape=} {bool_mask.dtype=}")
     if True:
         depth_relative(roi_depth, roi_mask, roi_bool_mask)
+        f = depth_relative2(roi(depth_orig), roi_mask, roi_bool_mask)
+        frame = cv.cvtColor(f, cv.COLOR_GRAY2BGR)
 
     if ir is not None:
         proc = process_ir(roi(ir),roi_mask)
@@ -206,7 +210,7 @@ def process():
                 process_ir_full(avg(ir_stab,10), "ir stab")
             #process_ir_debug(roi(ir), roi_depth, roi_mask)
         proc = scale(proc)
-        frame = cv.cvtColor(proc, cv.COLOR_GRAY2BGR)
+        #frame = cv.cvtColor(proc, cv.COLOR_GRAY2BGR)
     else:
         log("IR failed")
         exit(12)
