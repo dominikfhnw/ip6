@@ -65,7 +65,7 @@ def range_mask(depth):
         mask2 = np.stack((mask2,)*3, axis=-1)
     return mask, mask2
 
-def depth_relative(depth, mask, bool_mask):
+def depth_relative(depth, mask, bool_mask, name="dr2"):
     dr2 = cv.normalize(depth, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U, mask=mask)
     dr2 = cv.applyColorMap(dr2, cv.COLORMAP_JET)
     # This uses more CPU power than it should...
@@ -73,7 +73,20 @@ def depth_relative(depth, mask, bool_mask):
     #dr2[bool_mask] = np.array([127,127,127])
     #dr2[mask==0]=np.array([127,127,127])
     dr2 = scale(dr2)
-    ishow("dr2", dr2, True)
+    ishow(name, dr2, True)
+
+
+def depth_relative2(depth, mask, bool_mask, name="dr2"):
+    depth[mask==0]=0
+    maxd = depth.max()      # find the deepest point in the *masked* area
+    depth[depth==0]=maxd    # set stuff to that
+    depth[mask==0]=maxd
+
+    gg = cv.normalize(depth, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
+    #gg = 255-gg
+    gg = scale(gg, cv.INTER_NEAREST)
+    ishow("gg", gg)
+
 
 def depth_absolute(depth):
     #depth = depth_raw.copy()
