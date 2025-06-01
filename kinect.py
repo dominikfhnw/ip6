@@ -50,11 +50,11 @@ def roi(img):
     return roi
 
 
-def scale(img):
+def scale(img, alg=ROI_ALG):
     if ROI_PRESCALE or ROI_SCALE == 1:
         return img
     else:
-        return cv.resize(img, None, None, ROI_SCALE, ROI_SCALE, ROI_ALG)
+        return cv.resize(img, None, None, ROI_SCALE, ROI_SCALE, alg)
 
 # Select distance range
 def range_mask(depth):
