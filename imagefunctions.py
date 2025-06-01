@@ -12,9 +12,9 @@ def histstretch(img):
 
 # TODO: use numpy for speed
 # TODO: image array also grows without bound
-def avg(image, count):
+def avg(image, count, type='uint8', avgtype='uint32'):
     assert len(image) < 2**(32-8)
-    composite = np.zeros(shape=image[-1].shape, dtype=np.uint32)
+    composite = np.zeros(shape=image[-1].shape, dtype=np.dtype(avgtype))
     count2 = len(image)
     if count2 > count:
         image = image[-count:]
@@ -23,7 +23,7 @@ def avg(image, count):
     last = image[-count:]
     for i in last:
         composite += i
-    return (composite/count).astype('uint8')
+    return (composite/count).astype(type)
 
 def phaseCorrelate(img1, img2):
     #log("SHAPE:"+str(img2.shape))
