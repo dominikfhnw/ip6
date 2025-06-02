@@ -4,6 +4,7 @@ import numpy as np
 import meta
 import timey
 import math
+from isave import ishow
 
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
@@ -30,6 +31,7 @@ FONT_THICKNESS = 1
 HANDEDNESS_TEXT_COLOR = (88, 205, 54)  # vibrant green
 
 globalresult = None
+canvas = None
 
 
 def get_point(detection_result):
@@ -129,9 +131,11 @@ def draw_landmarks_on_image(rgb_image, detection_result):
 
         if dist2 < 1:
             cv.circle(annotated_image, center=click1, radius=5, color=(0, 0, 255), thickness=-1, lineType=cv.LINE_AA)
+            cv.circle(canvas, center=click1, radius=2, color=(0, 0, 255), thickness=-1, lineType=cv.LINE_AA)
             meta.inc("click1")
-        if dist5 < 1:
+        if dist5 < 2: # TODO: only if palm up
             cv.circle(annotated_image, center=click2, radius=5, color=(255, 0, 0), thickness=-1, lineType=cv.LINE_AA)
+            cv.circle(canvas, center=click2, radius=2, color=(255, 0, 0), thickness=-1, lineType=cv.LINE_AA)
             meta.inc("click2")
 
         flip = crossP(base, pinkybase, wrist)
@@ -236,29 +240,30 @@ def print_result(result, output_image: mp.Image, timestamp_ms: int):
 
 def process(img: np.ndarray, t1):
     t2 = timey.time()
+    global canvas
+    if canvas is None:
+        log(f"SH {img.shape=}")
+        canvas = np.full(img.shape,255, dtype=np.uint8)
     # TODO: BGR/RGB swapped?
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img)
     timestamp_ms = int(t1 * 1000)
     dbg(f"gestures proc {img.shape} {timestamp_ms}")
 
-    if meta.true("async_gestures"):
-        if meta.true("gestures"):
-            rec.recognize_async(mp_image, timestamp_ms)
-        else:
-            rec.detect_async(mp_image, timestamp_ms)
-        dbg("async started")
-        if globalresult:
-            # dbg("got result " + str(globalresult.hand_world_landmarks))
-            img = draw_landmarks_on_image(img, globalresult)
+    t3 = timey.time()
+    # TODO: The "Using NORM_RECT without IMAGE_DIMENSIONS" error is emitted here
+    if meta.true("gestures"):
+        result = rec.recognize_for_video(mp_image, timestamp_ms)
     else:
-        # TODO: The "Using NORM_RECT without IMAGE_DIMENSIONS" error is emitted here
-        if meta.true("gestures"):
-            result = rec.recognize_for_video(mp_image, timestamp_ms)
-        else:
-            result = rec.detect_for_video(mp_image, timestamp_ms)
-        img = draw_landmarks_on_image(img, result)
-        process_result(result)
+        result = rec.detect_for_video(mp_image, timestamp_ms)
+    timey.delta("raw mp", t3)
+    img = draw_landmarks_on_image(img, result)
+    process_result(result)
     timey.delta(__name__,t2)
+    if meta.true("kinect_fast"):
+        co = cv.resize(canvas, None, None, 3, 3, cv.INTER_LINEAR)
+    else:
+        co = canvas
+    ishow("canvas", co)
     return img, result
 
 def init():
