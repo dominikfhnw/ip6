@@ -90,6 +90,28 @@ def init():
     dbg("end init")
     return width, height
 
+
+def getdepth():
+    t1 = timey.time()
+    try:
+        if Playback:
+            cap = playback.get_next_capture()
+        else:
+            cap = k4a.get_capture(50)
+    except EOFError:
+        log("end of stream")
+        exit(0)
+    except pyk4a.errors.K4ATimeoutException:
+        log("capture timeout")
+        return None
+    except Exception as ex:
+        log(f"exception: {ex=} {ex.args=} {type(ex)=}")
+        exit(5)
+
+    timey.delta(__name__,t1)
+    return cap.depth
+
+
 def get():
     t1 = timey.time()
     try:

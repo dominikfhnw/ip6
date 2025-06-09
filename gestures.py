@@ -238,7 +238,21 @@ def print_result(result, output_image: mp.Image, timestamp_ms: int):
     dbg("end print_result")
 
 
-def process(img: np.ndarray, t1):
+def proc_fast(img: np.ndarray, t1):
+    t2 = timey.time()
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=img)
+    #log(f"{mp_image=}")
+    timestamp_ms = int(t1 * 1000)
+    try:
+        result = rec.recognize_for_video(mp_image, timestamp_ms)
+    except Exception as ex:
+        log(f"FAILED {ex=}")
+    #img = draw_landmarks_on_image(img, result)
+    timey.delta(__name__,t2)
+    return img, result
+
+
+def gestures_process(img: np.ndarray, t1):
     t2 = timey.time()
     global canvas
     if canvas is None:

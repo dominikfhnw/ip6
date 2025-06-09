@@ -15,11 +15,13 @@ def time():
 t0 = time()
 
 def delta(name, t2, end = None):
-    if not isdbg:
-        return
     if end is None:
         end = time()
-    dbg(f"{name} time: {1000*(end - t2): .3f}ms")
+    result = end - t2
+    if isdbg:
+       dbg(f"{name} time: {1000*result: .3f}ms")
+    #log(f"{name} time: {1000*result: .3f}ms")
+    return result
 
 def fromstart():
     return time() - t0
@@ -31,3 +33,11 @@ def _end():
     log("total time: "+fromstr())
 
 atexit.register(_end)
+
+class Timey(float):
+    def __new__(cls, name):
+        return super().__new__(cls, time())
+    def __init__(self, name):
+        self.name = name
+    def delta(self, end = None):
+        return delta(self.name, self, end)

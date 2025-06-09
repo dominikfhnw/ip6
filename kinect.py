@@ -8,6 +8,7 @@ if meta.true("kinect_enable"):
 else:
     import kinect_fake as kinect_raw
 import timey
+from timey import Timey
 from imagefunctions import avg
 
 log, dbg, logger = log.auto(__name__)
@@ -20,8 +21,13 @@ AVG_IR = False
 ROI_X=210
 ROI_Y=10
 ROI_SIZE=300
+ROI_SCALE=3
+if meta.true("kinect_wide"):
+    ROI_X=330
+    ROI_Y=130
+    ROI_SIZE=400
+    ROI_SCALE=2
 ROI_ROTATE=cv.ROTATE_90_COUNTERCLOCKWISE
-ROI_SCALE=2
 ROI_PRESCALE=False
 if ROI_PRESCALE:
     ROI_SCALED=ROI_SIZE*ROI_SCALE
@@ -87,6 +93,23 @@ def depth_relative(depth, mask, bool_mask, name="dr2"):
     return dr2
 
 
+def proc_fast(depth):
+    t1 = Timey("kinect")
+    depth = roi(depth)
+    # np.minimum would also work
+    depth[depth==0]=1000
+    np.clip(depth, None, 1000, depth)
+    #maxd = depth.max()      # find the deepest point in the *masked* area
+    #mind = depth.min()
+    #log(f"{maxd=} {mind=}")
+
+    gg = cv.normalize(depth, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
+    gg = 255-gg
+    gg = cv.cvtColor(gg, cv.COLOR_GRAY2BGR)
+    t1.delta()
+    return gg
+
+
 def depth_relative2(depth, mask, bool_mask, name="dr2"):
     depth[mask==0]=0
     maxd = depth.max()      # find the deepest point in the *masked* area
@@ -96,8 +119,10 @@ def depth_relative2(depth, mask, bool_mask, name="dr2"):
     gg = cv.normalize(depth, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U)
     gg = 255-gg
     #gg = (0.7*gg).astype('u1')
-    gg = scale(gg, cv.INTER_NEAREST)
-    ishow("gg", gg)
+    #gg = scale(gg, cv.INTER_LINEAR)
+    #ishow("gg", gg)
+    #gg = cv.cvtColor(gg, cv.COLOR_GRAY2BGR)
+    #gg[mask==0]=(255,0,255)
     return gg
 
 
@@ -178,11 +203,15 @@ def process_rgb(rgba, mask, ir):
         ishow("composite", rgb3, True)
 
 
-def process():
+def process(depth_raw = None, ir = None, rgba = None, orig_color = None):
     t1 = timey.time()
-    depth_raw, ir, rgba, orig_color = kinect_raw.get()
     if depth_raw is None:
-        return np.zeros((meta.num("height"), meta.num("width"), 3), np.dtype('u1'))
+        depth_raw, ir, rgba, orig_color = kinect_raw.get()
+    global ROI_SCALE
+    if meta.true("kinect_fast"):
+        ROI_SCALE=1
+    if depth_raw is None:
+        return np.zeros((ROI_SIZE*ROI_SCALE, ROI_SIZE*ROI_SCALE, 3), np.dtype('u1'))
 
     depth_orig=depth_raw.copy()
     depth_raw[depth_raw==0]=65535
@@ -190,8 +219,6 @@ def process():
     roi_mask, roi_bool_mask = range_mask(roi_depth)
 
     if meta.true("kinect_fast"):
-        global ROI_SCALE
-        ROI_SCALE=1
         f = depth_relative2(roi(depth_orig), roi_mask, roi_bool_mask)
         frame = cv.cvtColor(f, cv.COLOR_GRAY2BGR)
         timey.delta(__name__, t1)
@@ -212,6 +239,9 @@ def process():
     if True:
         depth_relative(roi_depth, roi_mask, roi_bool_mask)
         f = depth_relative2(roi(depth_orig), roi_mask, roi_bool_mask)
+        f = scale(f)
+        ishow("gg", f)
+        #frame = f
         frame = cv.cvtColor(f, cv.COLOR_GRAY2BGR)
 
     if ir is not None:
@@ -220,10 +250,15 @@ def process():
         if not meta.true("kinect_fast"):
             process_ir_full(ir)
             if AVG_IR:
-                process_ir_full(avg(ir_stab,10), "ir stab")
+                av = avg(ir_stab,10)
+                process_ir_full(av, "ir stab")
+                irroi_stab = scale(process_ir(roi(av),roi_mask))
+                irroi_stab = cv.cvtColor(irroi_stab, cv.COLOR_GRAY2BGR)
+                ishow("irroi_stab",irroi_stab)
             #process_ir_debug(roi(ir), roi_depth, roi_mask)
         proc = scale(proc)
-        #frame = cv.cvtColor(proc, cv.COLOR_GRAY2BGR)
+        irroi = cv.cvtColor(proc, cv.COLOR_GRAY2BGR)
+        ishow("irroi",irroi)
     else:
         log("IR failed")
         exit(12)

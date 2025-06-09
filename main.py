@@ -17,10 +17,13 @@ if meta.true("mediapipe"):
     import gestures
 from timestring import timestring
 import kinect
+import loop
 
 SegDebug = False # debug segment part
 Scale = 1 # global scale for small videos
 Scale2 = 1 # scale for final output
+if meta.true("kinect_fast"):
+    Scale2 = 3
 
 Camera = -1 # which camera to use
 AutoExposure = True # let camera do stuff VS settings for high fps
@@ -144,21 +147,21 @@ if Fast:
     #res(10,10,120)
     #res(4096,3072,15)
     #res(2048,1536,30)
-
-    while True:
-        t1 = timey.time()
-        #ret, frame = cap.read()
-
-        _, frame, _ = kinect.get()
-        frame = cv.equalizeHist(cv.normalize(frame, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U))
-        #frame = color
-        match chr(cv.pollKey() & 0xFF).lower():
-            case 'q':
-                break
-        showfps(frame)
-        cv.imshow('out',frame)
-        t2 = timey.time()
-        meta.get("ft").append(t2 - t1 + 0.000001)
+    loop.run()
+    # while True:
+    #     t1 = timey.time()
+    #     #ret, frame = cap.read()
+    #
+    #     _, frame, _ = kinect.get()
+    #     frame = cv.equalizeHist(cv.normalize(frame, None, 0, 255, cv.NORM_MINMAX, dtype=cv.CV_8U))
+    #     #frame = color
+    #     match chr(cv.pollKey() & 0xFF).lower():
+    #         case 'q':
+    #             break
+    #     showfps(frame)
+    #     cv.imshow('out',frame)
+    #     t2 = timey.time()
+    #     meta.get("ft").append(t2 - t1 + 0.000001)
     exit(0)
 
 while True:
@@ -175,7 +178,7 @@ while True:
         frame = kinect.process()
     # square image for hand detection
     offset = int((width-height)/2)
-    frame = np.array(frame[0:height, offset:height+offset])
+    #frame = np.array(frame[0:height, offset:height+offset])
     if VideoWrite:
         vout1.write(frame)
     #log("FOCUS "+str(cap.get(cv.CAP_PROP_FOCUS)))
@@ -266,7 +269,7 @@ while True:
     if Aruco:
         out = aruco.process(out)
     if meta.true("mediapipe"):
-        out = gestures.process(frame, t1)
+        out, landmarks = gestures.gestures_process(frame, t1)
     result = meta.get("result")
     if result is not None:
         color=(0,255,0)
